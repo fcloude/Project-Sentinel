@@ -1,9 +1,13 @@
-def main() -> None:
-    print("=" * 50)
-    print("Project Sentinel")
-    print("Version : 0.0.1")
-    print("Status  : Sprint 2 Initialized")
-    print("=" * 50)
+from config.loader import load_settings
+
+settings = load_settings()
+
+
+def main():
+    print(settings)
+    print(type(settings))
+    print(settings.app_name)
+    print(settings.app_version)
 
 
 if __name__ == "__main__":
