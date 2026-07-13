@@ -1,6 +1,12 @@
 from ultralytics import YOLO
 
-from ai.detection import Detection
+from src.ai.detection import Detection
+print("=" * 60)
+print("Detection imported from:", Detection.__module__)
+print("Detection file:", Detection.__module__)
+print("Annotations:", Detection.__annotations__)
+print("Class:", Detection)
+print("=" * 60)
 
 
 class ObjectDetector:
@@ -12,6 +18,8 @@ class ObjectDetector:
     def detect(self, frame):
 
         results = self.model(frame.data)
+
+    
 
         detections = []
 
@@ -35,10 +43,12 @@ class ObjectDetector:
 
                 detections.append(
                     Detection(
-                        label,
-                        confidence,
-                        (x1, y1, x2, y2),
+                        label=label,
+                        confidence=confidence,
+                        box=(x1, y1, x2, y2),
                     )
                 )
+
+        print(f"Detections found: {len(detections)}")
 
         return detections

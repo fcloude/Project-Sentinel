@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Project Sentinel</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+    <header>
+
+        <h1>🛡️ Project Sentinel</h1>
+
+        <p>AI Security Dashboard</p>
+
+    </header>
+
+    <main>
+
+        <section class="status-card">
+
+            <h2>System Status</h2>
+
+            <div class="controls">
+
+    <form action="/start" method="post">
+        <button type="submit">
+            ▶ Start Sentinel
+        </button>
+    </form>
+
+    <form action="/stop" method="post">
+        <button type="submit">
+            ■ Stop Sentinel
+        </button>
+    </form>
+
+    <form action="/restart" method="post">
+        <button type="submit">
+            ↻ Restart
+        </button>
+    </form>
+
+</div>
+<h3>Engine Status</h3>
+
+<p id="engine-status">
+    Loading...
+</p>
+
+            <div class="grid">
+
+                <div>Running</div>
+                <div>{{ state.sentinel_running }}</div>
+
+                <div>Camera</div>
+                <div>{{ state.camera_connected }}</div>
+
+                <div>Telegram</div>
+                <div>{{ state.telegram_connected }}</div>
+
+                <div>Cameras</div>
+                <div>{{ state.camera_count }}</div>
+
+                <div>Known Faces</div>
+                <div>{{ state.known_faces }}</div>
+
+                <div>Unknown Faces</div>
+                <div>{{ state.unknown_faces }}</div>
+
+                <div>Alerts Today</div>
+                <div>{{ state.alerts_today }}</div>
+
+                <div>CPU</div>
+                <div>{{ state.cpu_usage }}%</div>
+
+                <div>RAM</div>
+                <div>{{ state.ram_usage }}%</div>
+
+                <div>FPS</div>
+                <div>{{ state.fps }}</div>
+
+            </div>
+
+        </section>
+
+        <section class="event-card">
+
+            <h2>Last Event</h2>
+
+            <p id="last-event">
+
+                {{ state.last_event }}
+
+            </p>
+
+        </section>
+
+    </main>
+    <script>
+
+async function refreshStatus() {
+
+    const response = await fetch("/api/status");
+
+    const status = await response.json();
+
+    document.getElementById("engine-status").innerHTML =
+        status.running
+        ? "🟢 Running"
+        : "🔴 Stopped";
+}
+
+refreshStatus();
+
+setInterval(
+    refreshStatus,
+    1000,
+);
+
+</script>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+
+</html>
