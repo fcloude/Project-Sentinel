@@ -1,0 +1,80 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+
+    background:#10151d;
+
+    color:white;
+
+}
+
+header{
+
+    background:#1d2633;
+
+    padding:20px;
+
+    text-align:center;
+
+}
+
+main{
+
+    width:90%;
+
+    margin:auto;
+
+    margin-top:30px;
+
+}
+
+.status-card,
+.event-card{
+
+    background:#1b2330;
+
+    padding:25px;
+
+    margin-bottom:25px;
+
+    border-radius:12px;
+
+}
+
+.status-card h2,
+.event-card h2{
+
+    margin-bottom:20px;
+
+}
+
+.grid{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    row-gap:12px;
+
+}
+
+.grid div:nth-child(even){
+
+    text-align:right;
+
+    color:#44d17c;
+
+}
+
+#last-event{
+
+    font-size:18px;
+
+    color:#f5d76e;
+
+}

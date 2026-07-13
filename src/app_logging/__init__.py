@@ -1,1 +1,1 @@
-from app_logging.logger import get_logger
+from .logger import get_logger

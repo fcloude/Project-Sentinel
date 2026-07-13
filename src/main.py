@@ -1,151 +1,205 @@
+import threading
+import time
+
 import cv2
 
-from app_logging import get_logger
+from src.app_logging import get_logger
 
-from camera.camera_manager import CameraManager
-from camera.usb_camera import USBCamera
-
-from motion.detector import MotionDetector
-from motion.snapshot import SnapshotSaver
-
-from events.event import Event
-from events.event_bus import EventBus
-
+from src.ai.detector import ObjectDetector
+from src.camera.camera_manager import CameraManager
+from src.camera.usb_camera import USBCamera
+from src.events import event_types
+from src.events.event_manager import EventManager
+from src.face.face_manager import FaceManager
+from src.motion.detector import MotionDetector
+from src.motion.snapshot import SnapshotSaver
+from src.notifications.notification_manager import NotificationManager
 
 logger = get_logger(__name__)
 
-bus = EventBus()
 
-detector = MotionDetector()
-saver = SnapshotSaver()
+class SentinelEngine:
+    def __init__(self):
+        self.running = False
+        self.thread = None
 
+        self.camera = CameraManager(USBCamera())
+        self.events = EventManager()
+        self.motion_detector = MotionDetector()
+        self.snapshot_saver = SnapshotSaver()
+        self.object_detector = ObjectDetector()
+        self.face_manager = FaceManager()
+        self.notification_manager = NotificationManager()
 
-def log_event(event: Event) -> None:
-    logger.info("%s | %s", event.event_type, event.message)
+        self.events.subscribe(self.notification_manager.notify)
 
+    # --------------------------------------------------
+    # Engine Controls
+    # --------------------------------------------------
 
-bus.subscribe("CAMERA_CONNECTED", log_event)
-bus.subscribe("CAMERA_DISCONNECTED", log_event)
-bus.subscribe("MOTION_DETECTED", log_event)
+    def start(self):
+        if self.running:
+            logger.info("Sentinel Engine is already running.")
+            return
 
+        logger.info("Starting Sentinel Engine...")
 
-def main():
+        self.running = True
 
-    camera = CameraManager(USBCamera())
-
-    logger.info("Starting Project Sentinel...")
-
-    camera.connect()
-
-    bus.publish(
-        Event(
-            event_type="CAMERA_CONNECTED",
-            source="camera",
-            message="USB Camera connected."
+        self.thread = threading.Thread(
+            target=self.run,
+            name="SentinelEngine",
+            daemon=True,
         )
-    )
 
-    try:
+        self.thread.start()
 
-        while True:
+    def stop(self):
+        if not self.running:
+            return
 
-            frame = camera.capture_frame()
+        logger.info("Stopping Sentinel Engine...")
 
-            motion = detector.detect(frame)
+        self.running = False
 
-            if motion.detected:
+        if (
+            self.thread is not None
+            and self.thread.is_alive()
+            and threading.current_thread() != self.thread
+        ):
+            self.thread.join(timeout=5)
 
-                bus.publish(
-                    Event(
-                        event_type="MOTION_DETECTED",
-                        source="motion",
-                        message=f"{motion.contour_count} motion regions detected."
-                    )
-                )
-
-                snapshot = saver.save(frame)
-
-                logger.info(
-                    "Snapshot saved -> %s",
-                    snapshot,
-                )
-
-                for x, y, w, h in motion.bounding_boxes:
-
-                    cv2.rectangle(
-                        frame.data,
-                        (x, y),
-                        (x + w, y + h),
-                        (0, 255, 0),
-                        2,
-                    )
-
-            cv2.imshow(
-                "Project Sentinel",
-                frame.data,
-            )
-
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
-    finally:
-
-        camera.disconnect()
-
-        bus.publish(
-            Event(
-                event_type="CAMERA_DISCONNECTED",
-                source="camera",
-                message="USB Camera disconnected."
-            )
-        )
+        try:
+            self.camera.release()
+        except Exception as e:
+            logger.exception("Failed to release camera: %s", e)
 
         cv2.destroyAllWindows()
 
+        logger.info("Sentinel Engine stopped.")
+
+    def restart(self):
+        logger.info("Restarting Sentinel Engine...")
+
+        self.stop()
+        self.start()
+
+    # --------------------------------------------------
+    # Main Loop
+    # --------------------------------------------------
+
+    def run(self):
+        logger.info("Sentinel Engine Running.")
+
+        try:
+            while self.running:
+
+                frame = self.camera.capture_frame()
+
+                if frame is None:
+                    time.sleep(0.05)
+                    continue
+
+                motion = self.motion_detector.detect(frame)
+
+                if motion.detected:
+
+                    self.events.publish(
+                        event_types.MOTION_DETECTED,
+                        "motion",
+                        f"{motion.contour_count} motion regions detected.",
+                        contour_count=motion.contour_count,
+                    )
+
+                    self.snapshot_saver.save(frame)
+
+                    detections = self.object_detector.detect(frame)
+
+                    for detection in detections:
+
+                        if detection.label == "person":
+
+                            self.events.publish(
+                                event_types.PERSON_DETECTED,
+                                "ai",
+                                "Person detected.",
+                            )
+
+                            results = self.face_manager.recognize(frame)
+
+                            for result in results:
+
+                                if result.recognized:
+
+                                    self.events.publish(
+                                        event_types.FACE_RECOGNIZED,
+                                        "face",
+                                        f"{result.name} recognized.",
+                                    )
+
+                                else:
+
+                                    self.events.publish(
+                                        event_types.UNKNOWN_PERSON,
+                                        "face",
+                                        "Unknown person detected.",
+                                    )
+
+                        else:
+
+                            self.events.publish(
+                                event_types.OBJECT_DETECTED,
+                                "ai",
+                                f"{detection.label} detected.",
+                            )
+
+                image = getattr(frame, "data", frame)
+
+                cv2.imshow("Project Sentinel", image)
+
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    logger.info("Quit requested from OpenCV window.")
+                    self.running = False
+
+        except Exception:
+            logger.exception("Unexpected error inside Sentinel Engine.")
+
+        finally:
+            try:
+                self.camera.release()
+            except Exception:
+                pass
+
+            cv2.destroyAllWindows()
+
+            self.running = False
+
+            logger.info("Sentinel Engine exited.")
+
+    # --------------------------------------------------
+    # Status
+    # --------------------------------------------------
+
+    @property
+    def status(self):
+        return {
+            "running": self.running,
+            "thread_alive": (
+                self.thread is not None
+                and self.thread.is_alive()
+            ),
+        }
+
+
+engine = SentinelEngine()
+
 
 if __name__ == "__main__":
-    main()
+    engine.start()
 
-    detections = detector.detect(frame)
-
-for detection in detections:
-
-    x1, y1, x2, y2 = detection.box
-
-    cv2.rectangle(
-        frame.data,
-        (x1, y1),
-        (x2, y2),
-        (255, 0, 0),
-        2,
-    )
-
-    cv2.putText(
-        frame.data,
-        f"{detection.label} {detection.confidence:.2f}",
-        (x1, y1 - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (255, 0, 0),
-        2,
-    )
-
-    if detection.label == "person":
-
-        bus.publish(
-            Event(
-                event_type="PERSON_DETECTED",
-                source="ai",
-                message="Person detected."
-            )
-        )
-
-    else:
-
-        bus.publish(
-            Event(
-                event_type="OBJECT_DETECTED",
-                source="ai",
-                message=f"{detection.label} detected."
-            )
-        )
+    try:
+        while engine.running:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received.")
+        engine.stop()
