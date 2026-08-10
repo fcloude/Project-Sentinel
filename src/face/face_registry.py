@@ -2,10 +2,10 @@ from pathlib import Path
 
 import cv2
 
-from camera.frame import Frame
-from face.database import FaceDatabase
-from face.embedding import FaceEmbedding
-from face.face_detector import FaceDetector
+from src.camera.frame import Frame
+from src.face.database import FaceDatabase
+from src.face.embedding import FaceEmbedding
+from src.face.face_detector import FaceDetector
 
 
 class FaceRegistry:

@@ -1,4 +1,4 @@
-from database.repositories.event_repository import EventRepository
+from src.database.repositories.event_repository import EventRepository
 
 
 class Statistics:

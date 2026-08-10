@@ -1,4 +1,4 @@
-from investigation.statistics import Statistics
+from src.investigation.statistics import Statistics
 
 
 class ReportGenerator:

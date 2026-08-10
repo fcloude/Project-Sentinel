@@ -1,4 +1,4 @@
-from database.manager import DatabaseManager
+from src.database.manager import DatabaseManager
 
 
 class EventRepository:

@@ -1,18 +1,18 @@
-from events.event import Event
+from src.events.event import Event
 
-from notifications.client import (
+from src.notifications.client import (
     TelegramClient,
 )
 
-from notifications.cooldown import (
+from src.notifications.cooldown import (
     CooldownManager,
 )
 
-from notifications.formatter import (
+from src.notifications.formatter import (
     NotificationFormatter,
 )
 
-from notifications.settings import (
+from src.notifications.settings import (
     COOLDOWN_SECONDS,
 )
 

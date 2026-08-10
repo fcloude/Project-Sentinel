@@ -1,8 +1,8 @@
 import cv2
 
-from camera.camera_interface import CameraInterface
-from camera.frame import Frame
-from camera.camera_exceptions import CameraConnectionError, CameraCaptureError
+from src.camera.camera_interface import CameraInterface
+from src.camera.frame import Frame
+from src.camera.camera_exceptions import CameraConnectionError, CameraCaptureError
 
 
 class USBCamera(CameraInterface):

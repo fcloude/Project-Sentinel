@@ -2,7 +2,7 @@ from telegram.ext import (
     CommandHandler,
 )
 
-from notifications.commands import (
+from src.notifications.commands import (
     ping,
     start,
     status,

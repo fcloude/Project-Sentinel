@@ -1,5 +1,5 @@
-from camera.camera_interface import CameraInterface
-from camera.frame import Frame
+from src.camera.camera_interface import CameraInterface
+from src.camera.frame import Frame
 
 
 class CameraManager:

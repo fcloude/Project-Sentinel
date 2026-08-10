@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from events.event import Event
+from src.events.event import Event
 
 
 class EventBus:

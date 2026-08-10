@@ -1,6 +1,6 @@
-from events.event import Event
+from src.events.event import Event
 
-from database.manager import DatabaseManager
+from src.database.manager import DatabaseManager
 
 
 class EventRepository:

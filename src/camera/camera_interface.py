@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from camera.frame import Frame
+from src.camera.frame import Frame
 
 
 class CameraInterface(ABC):

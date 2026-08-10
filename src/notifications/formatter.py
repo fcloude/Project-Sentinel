@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from events.event import Event
+from src.events.event import Event
 
 
 class NotificationFormatter:

@@ -1,8 +1,8 @@
-from camera.frame import Frame
+from src.camera.frame import Frame
 
-from face.face_detector import FaceDetector
-from face.face_matcher import FaceMatcher
-from face.face_registry import FaceRegistry
+from src.face.face_detector import FaceDetector
+from src.face.face_matcher import FaceMatcher
+from src.face.face_registry import FaceRegistry
 
 
 class FaceManager:
