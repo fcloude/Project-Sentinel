@@ -13,6 +13,7 @@ class FaceDatabase:
 
         self.connection = sqlite3.connect(
             self.database_path,
+            check_same_thread=False,
         )
 
         self.connection.execute(

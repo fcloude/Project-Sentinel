@@ -2,7 +2,7 @@ from pathlib import Path
 
 import requests
 
-from notifications.settings import (
+from src.notifications.settings import (
     API_URL,
     CHAT_ID,
     REQUEST_TIMEOUT,

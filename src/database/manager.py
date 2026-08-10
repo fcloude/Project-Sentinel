@@ -1,6 +1,6 @@
 import sqlite3
 
-from config.loader import load_settings
+from src.config.loader import load_settings
 
 settings = load_settings()
 

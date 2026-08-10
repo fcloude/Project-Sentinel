@@ -2,7 +2,7 @@ from telegram.ext import (
     Application,
 )
 
-from notifications.handlers import register_handlers
+from src.notifications.handlers import register_handlers
 from telegram.ext import Application
 
 class SentinelBot:

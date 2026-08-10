@@ -1,4 +1,4 @@
-from database.manager import DatabaseManager
+from src.database.manager import DatabaseManager
 
 CREATE_EVENTS_TABLE = """
 CREATE TABLE IF NOT EXISTS events (

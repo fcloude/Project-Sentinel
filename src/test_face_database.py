@@ -1,6 +1,6 @@
 import numpy as np
 
-from face.database import FaceDatabase
+from src.face.database import FaceDatabase
 
 
 database = FaceDatabase()

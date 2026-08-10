@@ -1,6 +1,6 @@
 import cv2
 
-from motion.motion_result import MotionResult
+from src.motion.motion_result import MotionResult
 
 
 class MotionDetector:

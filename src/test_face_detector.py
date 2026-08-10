@@ -1,8 +1,8 @@
 import cv2
 from pathlib import Path
 
-from camera.frame import Frame
-from face.face_detector import FaceDetector
+from src.camera.frame import Frame
+from src.face.face_detector import FaceDetector
 
 
 image_path = Path(__file__).parent.parent / "8454.jpg"

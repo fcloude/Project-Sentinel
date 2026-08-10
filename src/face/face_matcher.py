@@ -1,8 +1,8 @@
 import numpy as np
 
-from face.database import FaceDatabase
-from face.embedding import FaceEmbedding
-from face.recognition_result import RecognitionResult
+from src.face.database import FaceDatabase
+from src.face.embedding import FaceEmbedding
+from src.face.recognition_result import RecognitionResult
 
 
 class FaceMatcher:

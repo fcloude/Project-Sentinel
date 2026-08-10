@@ -1,8 +1,8 @@
-from database.repositories.event_repository import EventRepository
+from src.database.repositories.event_repository import EventRepository
 
-from database.repositories.detection_repository import DetectionRepository
+from src.database.repositories.detection_repository import DetectionRepository
 
-from investigation.report_generator import ReportGenerator
+from src.investigation.report_generator import ReportGenerator
 
 
 class InvestigationEngine:

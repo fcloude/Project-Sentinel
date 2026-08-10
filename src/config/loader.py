@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from config.settings import Settings
+from src.config.settings import Settings
 
 load_dotenv()
 
