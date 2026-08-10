@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .env
 .vscode/settings.json
+sentinel.zip
