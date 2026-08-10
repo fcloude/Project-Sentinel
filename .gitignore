@@ -1,6 +1,38 @@
+# Python
 .venv/
+venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Environment / secrets
 .env
-.vscode/settings.json
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Runtime camera data
+snapshots/
+captures/
+recordings/
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+
+# Archives
 sentinel.zip
+
+# OS
+.DS_Store
+Thumbs.db
