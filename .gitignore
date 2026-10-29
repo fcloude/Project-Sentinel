@@ -1,47 +1,48 @@
-<<<<<<< HEAD
-# Python
+ Environments and secrets
 .venv/
 venv/
-env/
-__pycache__/
-*.py[cod]
-
-# Environment / secrets
 .env
 .env.*
+!.env.example
 
-# IDE
-.vscode/
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+
+# Editor / OS
+.vscode/settings.json
 .idea/
+.DS_Store
+Thumbs.db
 
-# Databases
+# Runtime data. NEVER commit: contains faces, snapshots, video
+data/
+snapshots/
 *.db
-*.sqlite
+*.db-wal
+*.db-shm
 *.sqlite3
 
-# Runtime camera data
-snapshots/
-captures/
-recordings/
+# Models and weights (download at install/first run; check licences)
+*.pt
+*.onnx
+*.pth
+.insightface/
 
-# Logs
+# Backups and leftovers
+*.bak
+*.zip
 *.log
 logs/
 
-# Backup files
-*.bak
+# Release artefacts
+installers/
+*.exe
+*.msi
 
-# Archives
-sentinel.zip
-
-# OS
-.DS_Store
-Thumbs.db
-=======
-.venv/
-__pycache__/
-*.pyc
-.env
-.vscode/settings.json
-sentinel.zip
->>>>>>> 7e8a2c4a7f3326ed949b35ea3f552582d11fe4e0

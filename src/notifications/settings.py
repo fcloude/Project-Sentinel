@@ -1,9 +1,11 @@
-BOT_TOKEN = "8883747585:AAFVbvLiUSf_1n_nShLHpUHFSU6ccThaP7E"
+import os
 
-CHAT_ID = 8702856139
+from dotenv import load_dotenv
 
+load_dotenv()
+
+BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+CHAT_ID = int(os.environ["TELEGRAM_CHAT_ID"])
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
-
 REQUEST_TIMEOUT = 10
-
 COOLDOWN_SECONDS = 30
