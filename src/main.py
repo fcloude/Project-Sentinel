@@ -3,6 +3,8 @@ import time
 
 import cv2
 
+from src.database.repository import EventRepository
+from src.database.schema import initialize_database
 from src.app_logging import get_logger
 from src.ai.detector import ObjectDetector
 from src.camera.camera_manager import CameraManager
@@ -30,7 +32,9 @@ class SentinelEngine:
         self.object_detector = ObjectDetector()
         self.face_manager = FaceManager()
         self.notification_manager = NotificationManager()
-
+        initialize_database()
+        self.event_store = EventRepository()
+        self.events.subscribe("*", self.event_store.save)
         # Register Event Listeners
         self._register_event_handlers()
 
