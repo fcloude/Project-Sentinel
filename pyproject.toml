@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel"
+version = "0.1.0"
+description = "Local-first AI camera monitor"
+requires-python = ">=3.11"
+# NOTE: ultralytics and insightface are TEMPORARY. Both have licences that
+# block commercial sale (see docs/BUSINESS_AND_LICENSING.md). Removed in Phase 2.
+dependencies = [
+    "python-dotenv",
+    "opencv-python",
+    "numpy",
+    "flask",
+    "requests",
+    "python-telegram-bot",
+    "ultralytics",
+    "insightface",
+    "onnxruntime",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Only real errors for now (syntax errors, undefined names). Widen later.
+select = ["E9", "F63", "F7", "F82"]
