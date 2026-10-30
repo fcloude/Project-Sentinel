@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Cameras · Sentinel{% endblock %}
+{% block content %}
+<h1>Cameras</h1>
+
+<section class="card">
+    <h2>Your cameras</h2>
+    {% if cameras %}
+    <table>
+        <thead><tr><th>Name</th><th>Type</th><th>Address</th><th></th></tr></thead>
+        <tbody>
+        {% for c in cameras %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.kind }}</td>
+                <td>{{ c.display_source }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('delete_camera', camera_id=c.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No cameras yet. Add your first one below.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Add a camera</h2>
+    <form id="camera-form" method="post" action="{{ url_for('cameras') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label for="name">Name</label>
+        <input id="name" name="name" placeholder="Front door" maxlength="50" required>
+
+        <label for="kind">Type</label>
+        <select id="kind" name="kind">
+            {% for k in kinds %}
+            <option value="{{ k }}">{{ {"usb": "USB / built-in webcam", "url": "Network camera or phone app (RTSP / HTTP address)", "file": "Video file (demo)"}[k] }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="source">Camera number or address</label>
+        <input id="source" name="source" placeholder="0   or   rtsp://user:password@192.168.1.20:554/stream1" required>
+        <p class="hint">USB: 0 is the first camera. Network cameras and phone apps (IP Webcam, DroidCam…): paste the address the camera or app shows.</p>
+
+        <p class="row">
+            <button type="button" id="test-camera" class="secondary">Test connection</button>
+            <button type="submit">Add camera</button>
+        </p>
+        <p id="test-result" class="hint" aria-live="polite"></p>
+        <img id="test-preview" class="preview" alt="Camera preview">
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Set up · Sentinel{% endblock %}
+{% block content %}
+<section class="card auth">
+    <h1>Welcome to Sentinel 🛡️</h1>
+    <p class="muted">Create the administrator account. There is no default password.</p>
+    <form method="post" action="{{ url_for('setup') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" required>
+        <label for="password">Password (at least 10 characters)</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" required>
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" name="confirm" type="password" autocomplete="new-password" required>
+        <p class="row"><button type="submit">Create account</button></p>
+    </form>
+</section>
+{% endblock %}

@@ -19,6 +19,7 @@ dependencies = [
     "ultralytics",
     "insightface",
     "onnxruntime",
+    "cryptography",
 ]
 
 [project.optional-dependencies]

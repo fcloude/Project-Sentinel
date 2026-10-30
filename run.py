@@ -1,21 +1,20 @@
-from src.main import engine
+from src.config import settings
 from src.dashboard import create_app
-
+from src.main import engine
 
 app = create_app(engine)
 
 
 if __name__ == "__main__":
+    print("=" * 50)
+    print("        Project Sentinel")
+    print("=" * 50)
+    print(f"Dashboard : http://{settings.host}:{settings.port}")
+
+    if settings.host not in ("127.0.0.1", "localhost"):
+        print("WARNING   : dashboard is reachable from your network.")
+        print("            Anyone who can reach this address can try to log in.")
 
     print("=" * 50)
-    print("        Project Sentinel V1")
-    print("=" * 50)
-    print("Dashboard : http://127.0.0.1:5000")
-    print("Engine    : Ready")
-    print("=" * 50)
 
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=False,
-    )
+    app.run(host=settings.host, port=settings.port, debug=False, threaded=True)

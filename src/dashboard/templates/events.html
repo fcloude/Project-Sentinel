@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Events · Sentinel{% endblock %}
+{% block content %}
+<h1>Events</h1>
+<section class="card">
+    {% if events %}
+    <table>
+        <thead><tr><th>Time</th><th>Type</th><th>Source</th><th>Message</th></tr></thead>
+        <tbody>
+        {% for e in events %}
+            <tr><td>{{ e.timestamp }}</td><td>{{ e.event_type }}</td><td>{{ e.source }}</td><td>{{ e.message }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Nothing has happened yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

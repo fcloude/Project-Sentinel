@@ -10,3 +10,7 @@ class Settings:
     database_path: str
     log_level: str
     telegram_bot_token: str
+    host: str = "127.0.0.1"
+    port: int = 5000
+    cookie_secure: bool = False
+    allow_file_sources: bool = False
