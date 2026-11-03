@@ -7,9 +7,9 @@ Deciders: you (product owner + only developer).
 | ADR | Decision | Status |
 |-----|----------|--------|
 | 001 | Local-first self-hosted product; cloud relay later as paid add-on | Proposed |
-| 002 | Keep Flask for the MVP (FastAPI deferred) | **Accepted** (changed 2026-10-30) |
-| 003 | SQLite (WAL) + small versioned migrations (SQLAlchemy/Alembic deferred) | **Accepted** (changed 2026-10-30) |
-| 004 | Replace `buffalo_l` and YOLOv8 with commercially-licensable models | **Gate** (Week 5) |
+| 002 | Keep Flask for the MVP (FastAPI deferred) | **Accepted** (changed) |
+| 003 | SQLite (WAL) + small versioned migrations (SQLAlchemy/Alembic deferred) | **Accepted** (changed) |
+| 004 | YuNet + SFace via OpenCV; YOLOv8 and `buffalo_l` removed; body/object detection deferred | **Accepted, pending benchmark** |
 | 005 | Notification channels + rules + outbox; Telegram becomes bring-your-own | Proposed |
 | 006 | Camera ingestion via OpenCV/FFmpeg with reader threads (revisit later) | Proposed |
 | 007 | Server-rendered UI (Jinja2 + HTMX + Alpine + Tailwind) | Proposed |
@@ -53,7 +53,7 @@ Sell software that runs on the customer's own machine. Video and face data stay 
 
 ## ADR-002: Keep Flask for the MVP (FastAPI deferred)
 
-**Status:** Accepted (2026-10-30). **Supersedes the original recommendation to move to FastAPI.**
+**Status:** Accepted. **Supersedes the original recommendation to move to FastAPI.**
 
 > **Update:** Time-to-market matters more than the small technical edge FastAPI offers. You already know Flask, it is installed, and everything the MVP needs (login, CSRF, MJPEG video, server-sent events) works on Flask with a threaded server. Werkzeug's built-in password hashing means no extra auth packages. Revisit only if we hit a concrete limit (e.g. many simultaneous live streams). The original analysis is kept below for reference.
 
@@ -86,7 +86,7 @@ FastAPI + Jinja2 templates + Uvicorn. Flask is *viable*; this is a "slightly bet
 
 ## ADR-003: SQLite (WAL) + small versioned migrations
 
-**Status:** Accepted (2026-10-30). **Changed: SQLAlchemy + Alembic deferred.**
+**Status:** Accepted. **Changed: SQLAlchemy + Alembic deferred.**
 
 > **Update:** `src/database/schema.py` holds an ordered list of migrations. The database stores how many have run (`PRAGMA user_version`), so customers' databases upgrade in place. Rule: never edit an old migration; append a new one. This avoids learning an ORM now. Move to SQLAlchemy + Alembic if/when the schema or queries outgrow plain SQL. Original analysis kept below.
 
@@ -119,7 +119,16 @@ SQLite in WAL mode via SQLAlchemy 2.x, with Alembic migrations from day one. One
 
 ## ADR-004: Replace non-commercial / AGPL AI components
 
-**Status:** **Gate**, decided by a benchmark in Week 5
+**Status:** **Accepted, pending benchmark.** Implemented in Phase 2; you still must run `scripts/benchmark_faces.py` on a consented test set and be happy with the numbers before selling.
+
+> **Update (what was built):**
+> - **Faces:** YuNet (detection) + SFace (recognition), run by plain OpenCV. Both are OpenCV Zoo models listed as Apache-2.0 on their model cards. Read the `LICENSE` file in each zoo folder and record the SHA-256 hashes (`scripts/download_models.py` prints them) in `THIRD_PARTY_LICENSES.md`.
+> - **YOLOv8 / Ultralytics, InsightFace, PyTorch, onnxruntime: removed.**
+> - **"A person is here" now means "a face was found."** There is no body or object detector, so a person facing away from the camera, cars, dogs and parcels are not reported. This is a deliberate MVP trade-off, not an oversight. Candidates to add later (each needs its own licence check and benchmark): NanoDet, YOLOX or MediaPipe person detection from the OpenCV Zoo.
+> - **Every stored embedding records its `model_id`**, so a future model swap can never silently mix incompatible vectors.
+> - **Known limits to publish in the docs:** faces smaller than roughly 80 px in the image are unreliable, profile and masked faces are weak, and there is **no liveness detection** (a photo can fool it). If accuracy is unacceptable on your benchmark, escalate to AuraFace or a paid InsightFace licence.
+>
+> The original analysis is kept below.
 
 ### Context
 - InsightFace's **code** is MIT, but its pretrained model packs (`buffalo_l`, `buffalo_s`, `antelopev2`) are **non-commercial research only**. Your `FaceDetector` loads `buffalo_l`.

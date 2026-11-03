@@ -22,7 +22,7 @@ def create_app(engine=None, config=None):
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=settings.cookie_secure,
         PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
-        MAX_CONTENT_LENGTH=2 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=30 * 1024 * 1024,
         ENGINE=engine,
         ALLOW_FILE_SOURCES=settings.allow_file_sources,
     )

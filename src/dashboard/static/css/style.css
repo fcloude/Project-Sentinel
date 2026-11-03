@@ -55,3 +55,21 @@ th { color: var(--muted); font-weight: 600; }
 .preview.show { display: block; }
 .ok { color: #34d399; }
 .bad { color: #f87171; }
+
+/* live camera tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.tile { background: var(--panel2); border-radius: 10px; padding: 10px; }
+.tile img.live { display: none; width: 100%; border-radius: 8px; margin-bottom: 8px; }
+.tile img.live.show { display: block; }
+.badge { font-size: .8rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border);
+         color: var(--muted); margin-left: 6px; }
+.badge.ok { color: #34d399; border-color: #14532d; }
+.badge.warn { color: #fbbf24; border-color: #78350f; }
+
+/* people and unknown faces */
+.check { display: flex; gap: 10px; align-items: flex-start; color: var(--text); margin: 12px 0; }
+.check input { width: auto; margin-top: 4px; }
+.unknown { display: flex; gap: 20px; align-items: flex-start; }
+.unknown .grow { flex: 1; }
+.crop { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; background: var(--panel2); }
+input[type="file"] { padding: 8px; }

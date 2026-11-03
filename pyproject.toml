@@ -7,8 +7,6 @@ name = "sentinel"
 version = "0.1.0"
 description = "Local-first AI camera monitor"
 requires-python = ">=3.11"
-# NOTE: ultralytics and insightface are TEMPORARY. Both have licences that
-# block commercial sale (see docs/BUSINESS_AND_LICENSING.md). Removed in Phase 2.
 dependencies = [
     "python-dotenv",
     "opencv-python",
@@ -16,9 +14,6 @@ dependencies = [
     "flask",
     "requests",
     "python-telegram-bot",
-    "ultralytics",
-    "insightface",
-    "onnxruntime",
     "cryptography",
 ]
 

@@ -14,7 +14,10 @@
     <nav>
         <a href="{{ url_for('index') }}">Dashboard</a>
         <a href="{{ url_for('cameras') }}">Cameras</a>
+        <a href="{{ url_for('people') }}">People</a>
+        <a href="{{ url_for('unknown_faces') }}">Unknown{% if unknown_count %} <span class="badge warn">{{ unknown_count }}</span>{% endif %}</a>
         <a href="{{ url_for('events_page') }}">Events</a>
+        <a href="{{ url_for('settings_page') }}">Settings</a>
     </nav>
     <form method="post" action="{{ url_for('logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

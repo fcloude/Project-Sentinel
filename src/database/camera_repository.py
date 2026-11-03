@@ -67,3 +67,29 @@ class CameraRepository:
 
     def count(self) -> int:
         return self.conn.execute("SELECT COUNT(*) FROM cameras").fetchone()[0]
+
+    def list_enabled(self):
+        """Cameras the engine should run, with their decrypted source."""
+        rows = self.conn.execute(
+            """
+            SELECT id, name, kind, source_enc, detection_fps
+            FROM cameras WHERE enabled = 1 ORDER BY id
+            """
+        ).fetchall()
+
+        cameras = []
+        for camera_id, name, kind, source_enc, fps in rows:
+            try:
+                source = self.box.decrypt(source_enc)
+            except InvalidToken:
+                continue  # saved under a different secret key; cannot be used
+            cameras.append(
+                {
+                    "id": camera_id,
+                    "name": name,
+                    "kind": kind,
+                    "source": source,
+                    "detection_fps": fps,
+                }
+            )
+        return cameras

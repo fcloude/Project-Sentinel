@@ -14,6 +14,23 @@
         </form>
         {% endfor %}
     </div>
+    <p class="hint">Starting loads the AI models and can take up to a minute the first time.</p>
+</section>
+
+<section class="card">
+    <h2>Live view</h2>
+    {% if cameras %}
+    <div class="tiles">
+        {% for c in cameras %}
+        <figure class="tile" data-camera-id="{{ c.id }}">
+            <img class="live" data-stream="{{ url_for('camera_stream', camera_id=c.id) }}" alt="Live view of {{ c.name }}">
+            <figcaption><strong>{{ c.name }}</strong> <span class="badge">engine stopped</span></figcaption>
+        </figure>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty"><a href="{{ url_for('cameras') }}">Add a camera</a> to get started.</p>
+    {% endif %}
 </section>
 
 <section class="stats">
@@ -25,15 +42,15 @@
     <h2>Latest events</h2>
     {% if events %}
     <table>
-        <thead><tr><th>Time</th><th>Type</th><th>Message</th></tr></thead>
+        <thead><tr><th>Time</th><th>Camera</th><th>Type</th><th>Message</th></tr></thead>
         <tbody>
         {% for e in events %}
-            <tr><td>{{ e.timestamp }}</td><td>{{ e.event_type }}</td><td>{{ e.message }}</td></tr>
+            <tr><td>{{ e.timestamp }}</td><td>{{ e.source }}</td><td>{{ e.event_type }}</td><td>{{ e.message }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p class="empty">No events yet. {% if camera_count == 0 %}<a href="{{ url_for('cameras') }}">Add a camera</a> to get started.{% else %}Press Start and walk in front of the camera.{% endif %}</p>
+    <p class="empty">No events yet. Press Start and walk in front of a camera.</p>
     {% endif %}
 </section>
 {% endblock %}

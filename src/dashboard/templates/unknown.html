@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Unknown faces · Sentinel{% endblock %}
+{% block content %}
+<h1>Unknown faces</h1>
+<p class="muted">Faces the cameras saw but couldn't name. Name them to teach Sentinel, or dismiss them. Unknown faces are deleted automatically after 7 days.</p>
+
+{% if unknowns %}
+    {% for u in unknowns %}
+    <article class="card unknown">
+        <img class="crop" src="{{ url_for('unknown_crop', unknown_id=u.id) }}" alt="An unknown face">
+        <div class="grow">
+            <p><strong>{{ camera_names.get(u.camera_id, "Camera") }}</strong> · last seen {{ u.seen_at }} · seen {{ u.seen_count }} time(s)</p>
+
+            <form method="post" action="{{ url_for('name_unknown', unknown_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label for="name-{{ u.id }}">This is a new person</label>
+                <input id="name-{{ u.id }}" name="name" maxlength="50" placeholder="Name">
+                <label class="check"><input type="checkbox" name="consent"> This person has agreed to being recognised.</label>
+
+                {% if people %}
+                <label for="person-{{ u.id }}">…or it's someone already added</label>
+                <select id="person-{{ u.id }}" name="person_id">
+                    <option value="">Choose…</option>
+                    {% for p in people %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+                </select>
+                {% endif %}
+
+                <p class="row"><button type="submit">Save</button></p>
+            </form>
+
+            <form method="post" action="{{ url_for('dismiss_unknown', unknown_id=u.id) }}" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="secondary">Dismiss and delete</button>
+            </form>
+        </div>
+    </article>
+    {% endfor %}
+{% else %}
+    <section class="card"><p class="empty">Nothing to review. Unknown faces will show up here.</p></section>
+{% endif %}
+{% endblock %}

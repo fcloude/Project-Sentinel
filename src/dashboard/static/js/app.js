@@ -2,21 +2,65 @@
     var meta = document.querySelector('meta[name="csrf-token"]');
     var csrf = meta ? meta.content : "";
 
-    // Live engine status on the dashboard.
+    // ---- Dashboard: engine status + live camera tiles ------------------
     var statusEl = document.getElementById("engine-status");
+
+    function statusText(s) {
+        if (s.loading) { return "⏳ Loading AI models…"; }
+        if (s.running && s.error) { return "🟡 Running. " + s.error; }
+        if (s.running) { return "🟢 Running"; }
+        if (s.error) { return "🔴 Stopped. " + s.error; }
+        return "🔴 Stopped";
+    }
+
+    function updateTiles(s) {
+        var byId = {};
+        (s.cameras || []).forEach(function (c) { byId[c.id] = c; });
+
+        document.querySelectorAll("[data-camera-id]").forEach(function (tile) {
+            var cam = byId[tile.getAttribute("data-camera-id")];
+            var badge = tile.querySelector(".badge");
+            var img = tile.querySelector("img");
+
+            if (!cam) {
+                badge.textContent = s.running ? "starting…" : "engine stopped";
+                badge.className = "badge";
+                if (img.getAttribute("src")) {
+                    img.removeAttribute("src");
+                    img.className = "live";
+                }
+                return;
+            }
+
+            badge.textContent = cam.error && cam.state !== "online"
+                ? cam.state + ": " + cam.error
+                : cam.state;
+            badge.className = "badge " +
+                (cam.state === "online" ? "ok" : cam.state === "reconnecting" ? "warn" : "");
+
+            if (cam.state === "online" && !img.getAttribute("src")) {
+                img.setAttribute("src", img.getAttribute("data-stream"));
+                img.className = "live show";
+            }
+        });
+    }
+
     if (statusEl) {
         var refresh = function () {
             fetch("/api/status", { headers: { Accept: "application/json" } })
                 .then(function (r) { return r.ok ? r.json() : null; })
                 .then(function (s) {
-                    if (s) { statusEl.textContent = s.running ? "🟢 Running" : "🔴 Stopped"; }
+                    if (!s) { return; }
+                    statusEl.textContent = statusText(s);
+                    updateTiles(s);
                 })
                 .catch(function () { statusEl.textContent = "⚠️ Cannot reach server"; });
         };
+        refresh();
         setInterval(refresh, 3000);
     }
 
-    // "Test connection" on the Add Camera form.
+    // ---- Add Camera form: "Test connection" ------------------------------
     var testBtn = document.getElementById("test-camera");
     if (testBtn) {
         var form = document.getElementById("camera-form");

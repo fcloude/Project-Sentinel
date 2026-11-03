@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}People · Sentinel{% endblock %}
+{% block content %}
+<h1>People</h1>
+
+{% if stale %}
+<div class="flash error" role="alert">{{ stale }} saved face photo(s) were made with an older recognition model and no longer work. Add fresh photos to those people.</div>
+{% endif %}
+
+<section class="card">
+    <h2>Known people</h2>
+    {% if people %}
+    <table>
+        <thead><tr><th>Name</th><th>Photos</th><th>Add photos</th><th></th></tr></thead>
+        <tbody>
+        {% for p in people %}
+            <tr>
+                <td>{{ p.name }}</td>
+                <td>{{ p.photo_count }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('add_person_photos', person_id=p.id) }}" enctype="multipart/form-data" class="row">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="file" name="photos" accept="image/*" multiple required aria-label="Photos of {{ p.name }}">
+                        <button type="submit" class="secondary">Upload</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" action="{{ url_for('delete_person', person_id=p.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Nobody yet. Add yourself below. Faces from the cameras also appear under <a href="{{ url_for('unknown_faces') }}">Unknown</a> for one-click naming.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Add a person</h2>
+    <form method="post" action="{{ url_for('people') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label for="name">Name</label>
+        <input id="name" name="name" maxlength="50" required>
+
+        <label for="photos">Photos (3 to 5 work best)</label>
+        <input id="photos" type="file" name="photos" accept="image/*" multiple required>
+        <p class="hint">Clear, front-facing, one person per photo. Use different lighting and slight angles. Up to 5 photos, 8 MB each.</p>
+
+        <label class="check"><input type="checkbox" name="consent"> This person has agreed to being recognised by this system.</label>
+
+        <p class="row"><button type="submit">Add person</button></p>
+    </form>
+</section>
+{% endblock %}

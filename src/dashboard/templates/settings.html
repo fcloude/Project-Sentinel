@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Settings · Sentinel{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<section class="card">
+    <h2>Face matching</h2>
+    <form method="post" action="{{ url_for('settings_page') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% for value, title, help in levels %}
+        <label class="check">
+            <input type="radio" name="strictness" value="{{ value }}" {% if value == strictness %}checked{% endif %}>
+            <span><strong>{{ title }}</strong> <span class="muted">{{ help }}</span></span>
+        </label>
+        {% endfor %}
+        <p class="row"><button type="submit">Save</button></p>
+    </form>
+    <p class="hint">Sentinel does not detect photos or screens held up to a camera, so don't use it as a door lock.</p>
+</section>
+{% endblock %}

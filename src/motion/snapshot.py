@@ -1,32 +1,28 @@
-import os
-import cv2
-
 from datetime import datetime
+from pathlib import Path
+
+import cv2
 
 
 class SnapshotSaver:
+    """Saves JPEG snapshots as <data folder>/snapshots/<camera id>/<timestamp>.jpg.
 
-    def __init__(self):
+    The data folder is git-ignored. Never serve these files without a login check.
+    """
 
-        os.makedirs(
-            "snapshots",
-            exist_ok=True,
-        )
+    def __init__(self, base_dir=None):
+        if base_dir is None:
+            from src.database import manager
 
-    def save(self, frame):
+            base_dir = Path(manager.settings.database_path).parent / "snapshots"
+        self.base = Path(base_dir)
 
-        filename = datetime.now().strftime(
-            "%Y%m%d_%H%M%S.jpg"
-        )
+    def save(self, frame, camera_id):
+        folder = self.base / str(camera_id)
+        folder.mkdir(parents=True, exist_ok=True)
 
-        path = os.path.join(
-            "snapshots",
-            filename,
-        )
+        path = folder / (datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".jpg")
 
-        cv2.imwrite(
-            path,
-            frame.data,
-        )
-
-        return path
+        if not cv2.imwrite(str(path), frame.data):
+            return None
+        return str(path)
