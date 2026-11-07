@@ -3,7 +3,7 @@ import os
 import secrets
 from pathlib import Path
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
@@ -55,22 +55,80 @@ def get_encryption_keys() -> dict:
 
 
 class SecretBox:
-    """Encrypts short secrets (camera URLs, channel passwords) for storage."""
+    """Encrypts short secrets (camera URLs, channel passwords) for storage.
 
-    def __init__(self, secret: str | tuple[str, ...]):
-        # secret can be a string or a tuple (from config encryption_keys)
-        if isinstance(secret, tuple):
-            secret = secret[0]  # Take first element if tuple
+    Supports key rotation: if multiple keys are provided (as a tuple or list),
+    the decrypt method will try each key until one succeeds.
+    """
+
+    def __init__(self, secret: str | tuple[str, ...] | list):
+        # secret can be a string, tuple, or list (from config or test)
+        if isinstance(secret, (tuple, list)):
+            self._keys = list(secret)  # Store all keys for rotation
+        else:
+            self._keys = [secret]  # Single key
+
+    @classmethod
+    def generate_key(cls) -> str:
+        """Generate a new SecretBox key from a secret string."""
+        return secrets.token_urlsafe(48)
+
+    def _get_fernet(self, key: str) -> Fernet:
+        """Create a Fernet instance from a key string."""
         raw = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
             salt=None,
             info=b"sentinel-secretbox-v1",
-        ).derive(secret.encode("utf8"))
-        self._fernet = Fernet(base64.urlsafe_b64encode(raw))
+        ).derive(key.encode("utf8"))
+        return Fernet(base64.urlsafe_b64encode(raw))
 
     def encrypt(self, text: str) -> str:
-        return self._fernet.encrypt(text.encode("utf8")).decode("ascii")
+        """Encrypt text using the first key."""
+        fernet = self._get_fernet(self._keys[0])
+        return fernet.encrypt(text.encode("utf8")).decode("ascii")
 
     def decrypt(self, token: str) -> str:
-        return self._fernet.decrypt(token.encode("ascii")).decode("utf8")
+        """Decrypt token, trying each key in order (key rotation support).
+
+        Tries each stored key until decryption succeeds. Raises
+        SecretDecryptionError if no key can decrypt the token.
+        """
+        for key in self._keys:
+            try:
+                fernet = self._get_fernet(key)
+                return fernet.decrypt(token.encode("ascii")).decode("utf8")
+            except InvalidToken:
+                continue
+        raise SecretDecryptionError("Failed to decrypt camera source")
+
+    def rotate(self, token: str) -> str:
+        """Rotate the encryption key for a given token.
+
+        Decrypts the token with any available key to get the plaintext,
+        then re-encrypts it with the FIRST key in the key list (the new
+        rotation key), returning a new token that can be decrypted with
+        that key alone.
+
+        Returns the original token unchanged if there's only one key.
+        """
+        if len(self._keys) <= 1:
+            return token
+
+        # First, decrypt the token with any available key to get the plaintext
+        plaintext = None
+        for key in self._keys:
+            try:
+                fernet = self._get_fernet(key)
+                plaintext = fernet.decrypt(token.encode("ascii")).decode("utf8")
+                break
+            except InvalidToken:
+                continue
+
+        if plaintext is None:
+            # Couldn't decrypt - return original
+            return token
+
+        # Re-encrypt with the FIRST key in the list (the new rotation key)
+        fernet = self._get_fernet(self._keys[0])
+        return fernet.encrypt(plaintext.encode("utf8")).decode("ascii")

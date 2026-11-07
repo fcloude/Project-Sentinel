@@ -4,6 +4,7 @@ A rejected login used to surface as a bare ``403 Forbidden``. The token lives in
 session cookie, so the usual causes are a cookie the browser did not send (blocked
 cookie, ``Secure`` cookie over plain HTTP, cleared data) or a page rendered before the
 session was rotated (log out, password change, restart with a new ``SECRET_KEY``).
+
 Each rejection now records a reason, is written to the audit log and is logged — including
 the two authorities involved for ``bad_origin`` — and the app can answer the login/setup
 form with a fresh token instead of a dead end.
@@ -14,6 +15,7 @@ strings, so ``https://example.com`` and ``https://example.com:443`` agree. ``loc
 loopback and the scheme/port match: that is one local server reached by two names, which is
 common on local-first installs and cannot be forged by a remote site.
 """
+
 from __future__ import annotations
 
 import hmac
@@ -76,23 +78,11 @@ def _request_authority() -> tuple[str, str, int] | None:
 def origin_allowed(origin: str, trusted: tuple[str, ...], request_authority=None) -> bool:
     """Is ``origin`` the same authority as this request (or an explicitly trusted one)?"""
     if origin == "null":
-        # ``Origin: null`` can be sent by browsers in certain contexts (e.g., file://,
-        # certain cross-origin redirects). We only accept it when the request is
-        # actually same-origin (same machine, loopback). This prevents forging while
-        # allowing legitimate local development.
-        # When Origin is null, accept it if the request authority represents
-        # the same machine (loopback). This handles cases where browsers send
-        # Origin: null for local file requests or same-origin redirects.
-        if request_authority is not None:
-            expected = request_authority
-        else:
-            expected = _request_authority()
-        if expected is None:
-            return False
-        # Check that the expected authority is loopback (same machine).
-        # This allows Origin: null from localhost/127.0.0.1 but rejects it
-        # from foreign origins.
-        return _is_loopback(expected[1])
+        # ``Origin: null`` is rejected to prevent circumvention.
+        # Browsers send this when the origin is unknown or for file:// URLs,
+        # and it should not be trusted for cross-origin requests.
+        # Same-origin requests with a proper Origin header are still allowed.
+        return False
     candidate = _authority(origin)
     if candidate is None:
         return False

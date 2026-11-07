@@ -176,7 +176,7 @@ class SecurityStore:
 
     def list_users(self) -> list[User]:
         with self._tx() as c:
-            return [_row_to_user(r) for r in c.execute("SELECT * FROM users ORDER BY id").all()]  # type: ignore[misc]
+            return [_row_to_user(r) for r in c.execute("SELECT * FROM users ORDER BY id").fetchall()]  # type: ignore[misc]
 
     def create_first_admin(self, username: str, password_hash: str) -> User | None:
         """Atomic: succeeds only if the users table is empty (two simultaneous setups can't both win)."""

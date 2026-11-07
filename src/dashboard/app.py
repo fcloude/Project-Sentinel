@@ -59,7 +59,7 @@ def create_app(
         ALLOW_FILE_SOURCES=config.allow_file_sources,
         SESSION_COOKIE_NAME="__Host-sentinel_session" if config.https else "sentinel_session",
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESite="Lax",
+        SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=config.https,
         PERMANENT_SESSION_LIFETIME=config.session_absolute_seconds,
         MAX_CONTENT_LENGTH=config.max_upload_bytes,
