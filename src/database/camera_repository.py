@@ -11,13 +11,13 @@ class CameraRepository:
         self.conn = conn
         self.box = box
 
-    def add(self, name: str, kind: str, source: str) -> int:
+    def add(self, name: str, kind: str, source: str, user_id: int = 1) -> int:
         cursor = self.conn.execute(
             """
-            INSERT INTO cameras (name, kind, source_enc, enabled, detection_fps, created_at)
-            VALUES (?, ?, ?, 1, 3, ?)
+            INSERT INTO cameras (name, kind, source_enc, enabled, detection_fps, created_at, user_id)
+            VALUES (?, ?, ?, 1, 3, ?, ?)
             """,
-            (name, kind, self.box.encrypt(source), datetime.now(timezone.utc).isoformat()),
+            (name, kind, self.box.encrypt(source), datetime.now(timezone.utc).isoformat(), user_id),
         )
         self.conn.commit()
         return cursor.lastrowid
@@ -47,21 +47,22 @@ class CameraRepository:
             result["source"] = source
         return result
 
-    def list(self) -> list[dict]:
+    def list(self, user_id: int = 1) -> list[dict]:
         rows = self.conn.execute(
-            "SELECT id, name, kind, source_enc, enabled FROM cameras ORDER BY id"
+            "SELECT id, name, kind, source_enc, enabled FROM cameras WHERE user_id = ? ORDER BY id",
+            (user_id,),
         ).fetchall()
         return [self._row_to_dict(r, reveal=False) for r in rows]
 
-    def get(self, camera_id: int):
+    def get(self, camera_id: int, user_id: int = 1):
         row = self.conn.execute(
-            "SELECT id, name, kind, source_enc, enabled FROM cameras WHERE id = ?",
-            (camera_id,),
+            "SELECT id, name, kind, source_enc, enabled FROM cameras WHERE id = ? AND user_id = ?",
+            (camera_id, user_id),
         ).fetchone()
         return self._row_to_dict(row, reveal=True) if row else None
 
-    def delete(self, camera_id: int) -> None:
-        self.conn.execute("DELETE FROM cameras WHERE id = ?", (camera_id,))
+    def delete(self, camera_id: int, user_id: int = 1) -> None:
+        self.conn.execute("DELETE FROM cameras WHERE id = ? AND user_id = ?", (camera_id, user_id))
         self.conn.commit()
 
     def count(self) -> int:

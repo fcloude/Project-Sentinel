@@ -9,6 +9,8 @@ are added via a migration step in the app factory. The migration runner
 ensures they exist on legacy databases while preserving existing data.
 """
 
+import sqlite3
+
 from src.database.manager import DatabaseManager
 from src.security.store import ensure_user_columns
 
@@ -178,19 +180,23 @@ MIGRATIONS = [
         # These are added in Python in create_app rather than pure SQL migration
         # to preserve existing user records safely
     ],
-]
+    # v7: user ownership columns added for multi-tenant readiness
+    [
+        # Add user_id to cameras (if not already present) - for fresh installs, the column
+        # is added via the app factory's ensure_user_columns pattern; for legacy databases,
+        # this ALTER TABLE adds it safely
+        "ALTER TABLE cameras ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1",
+        # Add user_id to people (if not already present)
+        "ALTER TABLE people ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1",
+    ],
+]  # type: ignore[misc]
 
-"""Migration v6 adds Google auth columns to the users table.
-
-The columns are added in the app factory via ensure_user_columns + explicit
-ALTER TABLE statements so that legacy databases upgrade safely and existing
-user accounts (with password hashes) are preserved.
+"""Migration v7 adds user ownership columns for multi-tenant readiness.
 
 Columns added (if not already present):
-  - provider TEXT NOT NULL DEFAULT ''        -- e.g. 'google'
-  - provider_subject TEXT NOT NULL DEFAULT ''  -- Google's 'sub' claim
-  - email TEXT NOT NULL COLLATE NOCASE UNIQUE  -- user's email
-  - email_verified INTEGER NOT NULL DEFAULT 0  -- whether email was verified by Google
+  - user_id INTEGER NOT NULL DEFAULT 1 on cameras and people tables
+  - This is applied as ALTER TABLE statements to upgrade legacy databases safely.
+  - For fresh installs, the columns are added by the app factory at startup.
 """
 
 
@@ -207,7 +213,16 @@ def initialize_database(database_path: str | None = None) -> None:
         if version <= current:
             continue
         for statement in statements:
-            conn.execute(statement)
+            if isinstance(statement, str) and statement.startswith("ALTER TABLE"):
+                # Apply ALTER TABLE statements for ownership columns idempotently
+                # Use try/except because SQLite may throw "duplicate column name" on re-runs
+                try:
+                    conn.execute(statement)
+                except sqlite3.OperationalError:
+                    # Column may already exist; ignore and continue
+                    pass
+            else:
+                conn.execute(statement)
         conn.execute(f"PRAGMA user_version = {version}")  # sentinel-ok: loop integer
         conn.commit()
 

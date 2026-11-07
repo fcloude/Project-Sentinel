@@ -25,44 +25,48 @@ class PeopleRepository:
 
     # ---- people ---------------------------------------------------------
 
-    def person_exists(self, name: str) -> bool:
-        row = self.conn.execute("SELECT 1 FROM people WHERE name = ?", (name,)).fetchone()
+    def person_exists(self, name: str, user_id: int = 1) -> bool:
+        row = self.conn.execute(
+            "SELECT 1 FROM people WHERE name = ? AND user_id = ?", (name, user_id)
+        ).fetchone()
         return row is not None
 
-    def create_person(self, name: str, consent: bool, notes: str = "") -> int:
+    def create_person(self, name: str, consent: bool, notes: str = "", user_id: int = 1) -> int:
         if not consent:
             raise ValueError("Consent is required to add a person.")
         try:
             cursor = self.conn.execute(
-                "INSERT INTO people (name, notes, consent_at, created_at) VALUES (?, ?, ?, ?)",
-                (name, notes, now_iso(), now_iso()),
+                "INSERT INTO people (name, notes, consent_at, created_at, user_id) VALUES (?, ?, ?, ?, ?)",
+                (name, notes, now_iso(), now_iso(), user_id),
             )
         except sqlite3.IntegrityError:
             raise ValueError(f"'{name}' already exists.") from None
         self.conn.commit()
         return cursor.lastrowid
 
-    def get_person(self, person_id: int):
+    def get_person(self, person_id: int, user_id: int = 1):
         row = self.conn.execute(
-            "SELECT id, name, created_at FROM people WHERE id = ?", (person_id,)
+            "SELECT id, name, created_at FROM people WHERE id = ? AND user_id = ?", (person_id, user_id)
         ).fetchone()
         return {"id": row[0], "name": row[1], "created_at": row[2]} if row else None
 
-    def list_people(self):
+    def list_people(self, user_id: int = 1):
         rows = self.conn.execute(
             """
             SELECT p.id, p.name, p.created_at, COUNT(e.id)
             FROM people p LEFT JOIN face_embeddings e ON e.person_id = p.id
+            WHERE p.user_id = ?
             GROUP BY p.id ORDER BY p.name COLLATE NOCASE
-            """
+            """,
+            (user_id,),
         ).fetchall()
         return [
             {"id": r[0], "name": r[1], "created_at": r[2], "photo_count": r[3]} for r in rows
         ]
 
-    def delete_person(self, person_id: int) -> None:
+    def delete_person(self, person_id: int, user_id: int = 1) -> None:
         """Real deletion: the person and all their face data (cascade)."""
-        self.conn.execute("DELETE FROM people WHERE id = ?", (person_id,))
+        self.conn.execute("DELETE FROM people WHERE id = ? AND user_id = ?", (person_id, user_id))
         self.conn.commit()
 
     # ---- embeddings -----------------------------------------------------
