@@ -36,22 +36,28 @@ def get_secret_key(database_path: str) -> str:
     return key
 
 
-def get_encryption_keys() -> dict:
+def get_encryption_keys() -> tuple:
     """Return encryption keys for camera credentials.
 
-    Returns a dict with the Fernet key used to encrypt/decrypt camera passwords.
+    Returns a tuple of Fernet keys for camera password encryption/decryption.
+    The first key is the primary key; additional keys are kept for rotation.
+
+    Raises RuntimeError if SENTINEL_ENCRYPTION_KEYS is not configured.
     """
-    from src.security.config import SecurityConfig
-    config = SecurityConfig.from_env({
-        "SECRET_KEY": os.getenv("SECRET_KEY", ""),
-        "SENTINEL_ENCRYPTION_KEYS": os.getenv("SENTINEL_ENCRYPTION_KEYS", ""),
-    })
-    # In a full implementation, this would derive keys from the config
-    # For now, return the secret key as the Fernet key
-    fernet_key = config.secret_key
-    if isinstance(fernet_key, tuple):
-        fernet_key = fernet_key[0]  # Take first element if tuple
-    return {"fernet_key": fernet_key}
+    raw_keys = os.getenv("SENTINEL_ENCRYPTION_KEYS", "")
+    if not raw_keys or not raw_keys.strip():
+        raise RuntimeError(
+            "SENTINEL_ENCRYPTION_KEYS is not configured. "
+            "Run: python tools/gen_secrets.py or set SENTINEL_ENCRYPTION_KEYS."
+        )
+    # Parse comma-separated keys, preserving order for rotation
+    keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
+    if not keys:
+        raise RuntimeError(
+            "SENTINEL_ENCRYPTION_KEYS is empty. "
+            "Configure at least one Fernet encryption key."
+        )
+    return tuple(keys)
 
 
 class SecretBox:
@@ -97,7 +103,7 @@ class SecretBox:
         for key in self._keys:
             try:
                 fernet = self._get_fernet(key)
-                return fernet.decrypt(token.encode("ascii")).decode("utf8")
+                return fernet.decrypt(token.encode("utf8")).decode("utf8")
             except InvalidToken:
                 continue
         raise SecretDecryptionError("Failed to decrypt camera source")
@@ -120,7 +126,7 @@ class SecretBox:
         for key in self._keys:
             try:
                 fernet = self._get_fernet(key)
-                plaintext = fernet.decrypt(token.encode("ascii")).decode("utf8")
+                plaintext = fernet.decrypt(token.encode("utf8")).decode("utf8")
                 break
             except InvalidToken:
                 continue

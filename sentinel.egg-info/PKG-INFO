@@ -7,11 +7,11 @@ Requires-Dist: python-dotenv
 Requires-Dist: opencv-python
 Requires-Dist: numpy
 Requires-Dist: flask
+Requires-Dist: waitress
+Requires-Dist: argon2-cffi
 Requires-Dist: requests
 Requires-Dist: python-telegram-bot
-Requires-Dist: ultralytics
-Requires-Dist: insightface
-Requires-Dist: onnxruntime
+Requires-Dist: cryptography
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: ruff; extra == "dev"

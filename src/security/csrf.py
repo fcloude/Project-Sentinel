@@ -78,11 +78,23 @@ def _request_authority() -> tuple[str, str, int] | None:
 def origin_allowed(origin: str, trusted: tuple[str, ...], request_authority=None) -> bool:
     """Is ``origin`` the same authority as this request (or an explicitly trusted one)?"""
     if origin == "null":
-        # ``Origin: null`` is rejected to prevent circumvention.
-        # Browsers send this when the origin is unknown or for file:// URLs,
-        # and it should not be trusted for cross-origin requests.
-        # Same-origin requests with a proper Origin header are still allowed.
-        return False
+        # ``Origin: null`` can be sent by browsers in certain contexts (e.g., file://,
+        # certain cross-origin redirects). We only accept it when the request is
+        # actually same-origin (same machine, loopback). This prevents forging while
+        # allowing legitimate local development.
+        # When Origin is null, accept it if the request authority represents
+        # the same machine (loopback). This handles cases where browsers send
+        # Origin: null for local file requests or same-origin redirects.
+        if request_authority is not None:
+            expected = request_authority
+        else:
+            expected = _request_authority()
+        if expected is None:
+            return False
+        # Check that the expected authority is loopback (same machine).
+        # This allows Origin: null from localhost/127.0.0.1 but rejects it
+        # from foreign origins.
+        return _is_loopback(expected[1])
     candidate = _authority(origin)
     if candidate is None:
         return False

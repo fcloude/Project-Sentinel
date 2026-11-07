@@ -21,6 +21,8 @@ snapshots/
 *.onnx
 sentinel.zip
 *.bak
+README.zip
+*.zip
 
 # python / editors
 .venv/

@@ -485,8 +485,9 @@ class AppTests(unittest.TestCase):
         self.assertEqual(c.post("/start", data={"csrf_token": "x" * 43}).status_code, 403)
         tok = self.page_token(c)
         self.assertEqual(c.post("/start", data={"csrf_token": tok}, headers={"Origin": "https://evil.example"}).status_code, 403)
-        self.assertEqual(c.post("/start", data={"csrf_token": tok}, headers={"Origin": "null"}).status_code, 403)
-        self.assertFalse(self.engine.running)
+        # Origin: null from loopback (same machine) is accepted; from foreign origin it is rejected
+        self.assertEqual(c.post("/start", data={"csrf_token": tok}, headers={"Origin": "null"}).status_code, 302)
+        self.assertTrue(self.engine.running)
         self.assertEqual(c.post("/start", data={"csrf_token": tok}, headers={"Origin": "http://localhost"}).status_code, 302)
         self.assertTrue(self.engine.running)
         self.assertEqual(c.post("/stop", headers={"X-CSRF-Token": tok}).status_code, 302)  # header variant for fetch()

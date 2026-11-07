@@ -2,11 +2,11 @@ python-dotenv
 opencv-python
 numpy
 flask
+waitress
+argon2-cffi
 requests
 python-telegram-bot
-ultralytics
-insightface
-onnxruntime
+cryptography
 
 [dev]
 pytest

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+
 from src.camera.url_utils import mask_url
 from src.security.crypto import SecretDecryptionError
 
@@ -68,13 +69,11 @@ class CameraRepository:
     def count(self) -> int:
         return self.conn.execute("SELECT COUNT(*) FROM cameras").fetchone()[0]
 
-    def list_enabled(self):
+    def list_enabled(self, user_id: int = 1):
         """Cameras the engine should run, with their decrypted source."""
         rows = self.conn.execute(
-            """
-            SELECT id, name, kind, source_enc, detection_fps
-            FROM cameras WHERE enabled = 1 ORDER BY id
-            """
+            "SELECT id, name, kind, source_enc, detection_fps FROM cameras WHERE enabled = 1 AND user_id = ? ORDER BY id",
+            (user_id,),
         ).fetchall()
 
         cameras = []
@@ -92,4 +91,4 @@ class CameraRepository:
                     "detection_fps": fps,
                 }
             )
-        return cameras
+        return cameras
