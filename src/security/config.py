@@ -8,19 +8,17 @@ Google OAuth before any public deployment.
 from __future__ import annotations
 
 import os
-from dotenv import load_dotenv
+import json
+from pathlib import Path
 from collections.abc import Mapping
 from dataclasses import dataclass
 from ipaddress import ip_address
 
 from cryptography.fernet import Fernet
 
-load_dotenv()
-
 
 class SecurityConfigError(RuntimeError):
     """Raised at startup when the configuration is missing or unsafe."""
-
 
 _TRUE = {"1", "true", "yes", "on"}
 _PLACEHOLDERS = {
@@ -55,6 +53,75 @@ def _int(env: Mapping[str, str], name: str, default: int, lo: int, hi: int) -> i
     if not lo <= value <= hi:
         raise SecurityConfigError(f"{name} must be between {lo} and {hi}.")
     return value
+
+
+def _get_config_path() -> Path:
+    """Return the path to the application configuration file.
+
+    Looks for config in the standard Windows application data location,
+    falling back to the user's home directory.
+    """
+    # Windows: %APPDATA%\Sentinel\config.json
+    # Fallback: ~/.sentinel/config.json on Unix
+    app_data = os.environ.get("APPDATA")
+    if app_data:
+        return Path(app_data) / "Sentinel" / "config.json"
+    home = Path.home()
+    return home / ".sentinel" / "config.json"
+
+
+def _load_config() -> dict | None:
+    """Load configuration from the application data file if it exists.
+
+    Returns None if no configuration file exists.
+    """
+    config_path = _get_config_path()
+    if config_path is not None and config_path.exists():
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return None
+    return None
+
+
+def _save_config(config: dict) -> None:
+    """Save configuration to the application data file.
+
+    Creates the parent directory if it doesn't exist.
+    """
+    config_path = _get_config_path()
+    if config_path is not None:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+
+
+def _generate_secure_secrets() -> tuple[str, str]:
+    """Generate cryptographically secure secrets for a new installation.
+
+    Returns a tuple of (SECRET_KEY, SENTINEL_ENCRYPTION_KEYS).
+    """
+    from cryptography.fernet import Fernet
+
+    # Generate SECRET_KEY (32+ bytes, base64-encoded for Fernet compatibility)
+    secret_key = Fernet.generate_key().decode()
+
+    # Generate SENTINEL_ENCRYPTION_KEYS (primary Fernet key)
+    encryption_key = Fernet.generate_key().decode()
+
+    return secret_key, encryption_key
+
+
+def _is_first_run() -> bool:
+    """Check if this is the first run (no existing configuration).
+
+    Returns True if no configuration file exists.
+    """
+    config_path = _get_config_path()
+    if config_path is None:
+        return True
+    return not config_path.exists()
 
 
 @dataclass(frozen=True)
@@ -101,19 +168,27 @@ class SecurityConfig:
         # --- session signing key
         secret = env.get("SECRET_KEY", "")
         if len(secret) < 32:
-            raise SecurityConfigError("SECRET_KEY is missing or shorter than 32 characters. Run: python tools/gen_secrets.py")
+            raise SecurityConfigError(
+                "SECRET_KEY is missing or shorter than 32 characters. Run: python tools/gen_secrets.py"
+            )
         if secret.strip().lower() in _PLACEHOLDERS or len(set(secret)) < 8:
-            raise SecurityConfigError("SECRET_KEY looks like a placeholder. Generate a real one: python tools/gen_secrets.py")
+            raise SecurityConfigError(
+                "SECRET_KEY looks like a placeholder. Generate a real one: python tools/gen_secrets.py"
+            )
 
         # --- encryption keys (first = primary, others = old keys kept for rotation)
         raw_keys = [k.strip() for k in env.get("SENTINEL_ENCRYPTION_KEYS", "").split(",") if k.strip()]
         if not raw_keys:
-            raise SecurityConfigError("SENTINEL_ENCRYPTION_KEYS is missing. Run: python tools/gen_secrets.py")
+            raise SecurityConfigError(
+                "SENTINEL_ENCRYPTION_KEYS is missing. Run: python tools/gen_secrets.py"
+            )
         for key in raw_keys:
             try:
                 Fernet(key.encode())
             except (ValueError, TypeError) as exc:
-                raise SecurityConfigError("SENTINEL_ENCRYPTION_KEYS contains an invalid Fernet key.") from exc
+                raise SecurityConfigError(
+                    "SENTINEL_ENCRYPTION_KEYS contains an invalid Fernet key."
+                ) from exc
 
         # --- network exposure
         host = env.get("HOST", "127.0.0.1").strip() or "127.0.0.1"
@@ -141,11 +216,17 @@ class SecurityConfig:
         google_redirect_uri = env.get("GOOGLE_OAUTH_REDIRECT_URI", "").strip()
 
         if not google_client_id:
-            raise SecurityConfigError("GOOGLE_OAUTH_CLIENT_ID is required. Configure it in .env or environment variables.")
+            raise SecurityConfigError(
+                "GOOGLE_OAUTH_CLIENT_ID is required. Configure it in .env or environment variables."
+            )
         if not google_client_secret:
-            raise SecurityConfigError("GOOGLE_OAUTH_CLIENT_SECRET is required. Configure it in .env or environment variables.")
+            raise SecurityConfigError(
+                "GOOGLE_OAUTH_CLIENT_SECRET is required. Configure it in .env or environment variables."
+            )
         if not google_redirect_uri:
-            raise SecurityConfigError("GOOGLE_OAUTH_REDIRECT_URI is required. Configure it in .env or environment variables.")
+            raise SecurityConfigError(
+                "GOOGLE_OAUTH_REDIRECT_URI is required. Configure it in .env or environment variables."
+            )
 
         return cls(
             secret_key=secret,
