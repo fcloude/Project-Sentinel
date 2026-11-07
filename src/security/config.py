@@ -210,23 +210,12 @@ class SecurityConfig:
         origins = tuple(o.strip().rstrip("/") for o in env.get("SENTINEL_TRUSTED_ORIGINS", "").split(",") if o.strip())
 
         # --- Google OAuth 2.0 / OpenID Connect configuration ---
-        # These are REQUIRED for the public V1 product. The app will not start without them.
-        google_client_id = env.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
-        google_client_secret = env.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
-        google_redirect_uri = env.get("GOOGLE_OAUTH_REDIRECT_URI", "").strip()
-
-        if not google_client_id:
-            raise SecurityConfigError(
-                "GOOGLE_OAUTH_CLIENT_ID is required. Configure it in .env or environment variables."
-            )
-        if not google_client_secret:
-            raise SecurityConfigError(
-                "GOOGLE_OAUTH_CLIENT_SECRET is required. Configure it in .env or environment variables."
-            )
-        if not google_redirect_uri:
-            raise SecurityConfigError(
-                "GOOGLE_OAUTH_REDIRECT_URI is required. Configure it in .env or environment variables."
-            )
+        # These are REQUIRED when GOOGLE_OAUTH_ENABLED=true (for the public V1 product).
+        # When disabled, OAuth routes will return clear errors if accessed.
+        google_enabled = _flag(env, "GOOGLE_OAUTH_ENABLED")
+        google_client_id = env.get("GOOGLE_OAUTH_CLIENT_ID", "").strip() if google_enabled else ""
+        google_client_secret = env.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip() if google_enabled else ""
+        google_redirect_uri = env.get("GOOGLE_OAUTH_REDIRECT_URI", "").strip() if google_enabled else ""
 
         return cls(
             secret_key=secret,
