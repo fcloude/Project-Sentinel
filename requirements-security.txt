@@ -1,0 +1,8 @@
+# Names only. I could not verify versions offline: pin with `pip freeze` + pip-compile --generate-hashes.
+flask
+cryptography
+python-dotenv
+argon2-cffi
+waitress
+requests
+Authlib 

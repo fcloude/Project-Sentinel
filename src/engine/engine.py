@@ -1,4 +1,3 @@
-import os
 import threading
 import time
 
@@ -17,14 +16,15 @@ from src.events import event_types
 from src.events.event_manager import EventManager
 from src.events.queued_subscriber import QueuedSubscriber
 from src.motion.snapshot import SnapshotSaver
-from src.security.crypto import SecretBox, get_secret_key
+from src.notifications.service import build_dispatcher
+from src.security.crypto import SecretBox, get_encryption_keys
 
 logger = get_logger(__name__)
 
-NOTIFY_TYPES = (
+# Events the notification rules can react to.
+DISPATCH_TYPES = (
     event_types.MOTION_DETECTED,
     event_types.PERSON_DETECTED,
-    event_types.OBJECT_DETECTED,
     event_types.FACE_RECOGNIZED,
     event_types.UNKNOWN_PERSON,
 )
@@ -38,7 +38,7 @@ def load_enabled_cameras():
     initialize_database()
     conn = DatabaseManager().get_connection()
     try:
-        box = SecretBox(get_secret_key(manager.settings.database_path))
+        box = SecretBox(get_encryption_keys())
         return CameraRepository(conn, box).list_enabled()
     finally:
         conn.close()
@@ -58,16 +58,6 @@ def default_models_loader():
     return service
 
 
-def default_notifier_factory():
-    if not (os.getenv("TELEGRAM_BOT_TOKEN") and os.getenv("TELEGRAM_CHAT_ID")):
-        logger.info("Telegram is not configured, so no Telegram alerts will be sent.")
-        return None
-
-    from src.notifications.notifier import NotificationManager
-
-    return NotificationManager()
-
-
 # ----------------------------------------------------------------------
 
 
@@ -79,7 +69,7 @@ class SentinelEngine:
         camera_loader=load_enabled_cameras,
         source_factory=default_source_factory,
         models_loader=default_models_loader,
-        notifier_factory=default_notifier_factory,
+        dispatcher_factory=build_dispatcher,
         snapshot_dir=None,
         fps_override=None,
         persist_events=True,
@@ -88,7 +78,7 @@ class SentinelEngine:
         self.camera_loader = camera_loader
         self.source_factory = source_factory
         self.models_loader = models_loader
-        self.notifier_factory = notifier_factory
+        self.dispatcher_factory = dispatcher_factory
         self.snapshot_dir = snapshot_dir
         self.fps_override = fps_override
         self.persist_events = persist_events
@@ -244,21 +234,13 @@ class SentinelEngine:
             self.events.subscribe("*", persist)
             self._sinks.append((persist, ["*"]))
 
-        notifier = self.notifier_factory()
-        if notifier is not None:
-
-            def notify(event):
-                snapshot = event.metadata.get("snapshot")
-                if snapshot:
-                    notifier.notify_photo(event, snapshot)
-                else:
-                    notifier.notify(event)
-
-            sink = QueuedSubscriber(notify, "notifications")
+        dispatcher = self.dispatcher_factory()
+        if dispatcher is not None:
+            sink = QueuedSubscriber(dispatcher.handle, "alerts")
             sink.start()
-            for event_type in NOTIFY_TYPES:
+            for event_type in DISPATCH_TYPES:
                 self.events.subscribe(event_type, sink)
-            self._sinks.append((sink, list(NOTIFY_TYPES)))
+            self._sinks.append((sink, list(DISPATCH_TYPES)))
 
     def _shutdown(self):
         for analyzer in self._analyzers:

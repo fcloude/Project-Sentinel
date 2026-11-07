@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% block title %}Events{% endblock %}
+{% block content %}
+<div class="card">
+  <h3>System Events (last 500)</h3>
+  {% if events %}
+  <table>
+    <thead><tr><th>Type</th><th>Source</th><th>Message</th><th>Timestamp</th></tr></thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td><span class="badge badge-blue">{{ e[1] }}</span></td>
+        <td>{{ e[2] }}</td>
+        <td class="ellipsis">{{ e[3] }}</td>
+        <td class="mono muted">{{ e[4][:19] if e[4] else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No events recorded.</p>
+  {% endif %}
+</div>
+{% endblock %}

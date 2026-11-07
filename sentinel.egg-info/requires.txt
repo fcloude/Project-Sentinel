@@ -1,0 +1,13 @@
+python-dotenv
+opencv-python
+numpy
+flask
+requests
+python-telegram-bot
+ultralytics
+insightface
+onnxruntime
+
+[dev]
+pytest
+ruff

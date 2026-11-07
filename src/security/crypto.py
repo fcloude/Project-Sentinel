@@ -8,6 +8,10 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 
+class SecretDecryptionError(Exception):
+    """Raised when secret decryption fails."""
+
+
 def get_secret_key(database_path: str) -> str:
     """SECRET_KEY from the environment, else a random key stored next to the database.
 
@@ -32,10 +36,31 @@ def get_secret_key(database_path: str) -> str:
     return key
 
 
+def get_encryption_keys() -> dict:
+    """Return encryption keys for camera credentials.
+
+    Returns a dict with the Fernet key used to encrypt/decrypt camera passwords.
+    """
+    from src.security.config import SecurityConfig
+    config = SecurityConfig.from_env({
+        "SECRET_KEY": os.getenv("SECRET_KEY", ""),
+        "SENTINEL_ENCRYPTION_KEYS": os.getenv("SENTINEL_ENCRYPTION_KEYS", ""),
+    })
+    # In a full implementation, this would derive keys from the config
+    # For now, return the secret key as the Fernet key
+    fernet_key = config.secret_key
+    if isinstance(fernet_key, tuple):
+        fernet_key = fernet_key[0]  # Take first element if tuple
+    return {"fernet_key": fernet_key}
+
+
 class SecretBox:
     """Encrypts short secrets (camera URLs, channel passwords) for storage."""
 
-    def __init__(self, secret: str):
+    def __init__(self, secret: str | tuple[str, ...]):
+        # secret can be a string or a tuple (from config encryption_keys)
+        if isinstance(secret, tuple):
+            secret = secret[0]  # Take first element if tuple
         raw = HKDF(
             algorithm=hashes.SHA256(),
             length=32,

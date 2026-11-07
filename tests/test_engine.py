@@ -50,7 +50,7 @@ def make_engine(tmp_path, video, cameras=None, **overrides):
         camera_loader=lambda: cameras,
         source_factory=lambda camera: (lambda: FileCamera(camera["source"])),
         models_loader=lambda: FakeFaces(),
-        notifier_factory=lambda: None,
+        dispatcher_factory=lambda: None,
         snapshot_dir=str(tmp_path / "snaps"),
         fps_override=20,
         persist_events=False,
@@ -216,13 +216,11 @@ def test_restart_works(tmp_path, sample_video):
 
 
 def test_a_broken_alert_channel_does_not_stop_detection(tmp_path, sample_video):
-    class BrokenNotifier:
-        def notify(self, event):
+    class BrokenDispatcher:
+        def handle(self, event):
             raise ConnectionError("no internet")
 
-        notify_photo = notify
-
-    engine = make_engine(tmp_path, sample_video, notifier_factory=lambda: BrokenNotifier())
+    engine = make_engine(tmp_path, sample_video, dispatcher_factory=lambda: BrokenDispatcher())
     seen = collect(engine)
 
     engine.start()

@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% block title %}System Config{% endblock %}
+{% block content %}
+<div class="card card-medium">
+  <h3>System Configuration</h3>
+  <p class="hint-loose">
+    Read-only view of non-sensitive settings. Secrets and credentials are never shown here.
+    Edit values in <code class="code">.env</code> and restart the application.
+  </p>
+  <table>
+    <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>App Name</td><td>{{ config.app_name }}</td></tr>
+      <tr><td>Version</td><td>{{ config.app_version }}</td></tr>
+      <tr><td>Debug Mode</td><td>
+        {% if config.debug %}
+          <span class="badge badge-red">ENABLED — disable in production</span>
+        {% else %}
+          <span class="badge badge-green">Disabled</span>
+        {% endif %}
+      </td></tr>
+      <tr><td>Log Level</td><td>{{ config.log_level }}</td></tr>
+      <tr><td>Database Path</td><td class="mono">{{ config.database_path }}</td></tr>
+      <tr><td>Snapshot Directory</td><td class="mono">{{ config.snapshot_dir }}</td></tr>
+      <tr><td>HTTPS</td><td>{{ "Yes" if config.https else "No" }}</td></tr>
+      <tr><td>LAN Access</td><td>{{ "Allowed" if config.allow_lan else "Loopback only" }}</td></tr>
+      <tr><td>Session Idle Timeout</td><td>{{ config.session_idle_minutes }} minutes</td></tr>
+      <tr><td>Session Absolute Limit</td><td>{{ config.session_absolute_hours }} hours</td></tr>
+      <tr><td>Telegram Bot</td><td>
+        {% if config.telegram_bot_configured %}
+          <span class="badge badge-green">Configured</span>
+        {% else %}
+          <span class="badge badge-red">Not configured</span>
+        {% endif %}
+      </td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,8 +1,14 @@
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
+from src.security.validators import ValidationError, validate_camera_source
+
 ALLOWED_SCHEMES = ("rtsp", "rtsps", "http", "https")
 KINDS = ("usb", "url", "file")
+_URL_HELP = (
+    "Address must start with rtsp://, rtsps://, http:// or https://, "
+    "for example rtsp://192.168.1.20:554/stream1"
+)
 
 
 def mask_url(url: str) -> str:
@@ -44,17 +50,15 @@ def validate_source(kind: str, source: str, allow_file: bool = False):
     if kind == "url":
         if len(source) > 2048:
             return None, "That address is too long."
+        # One validator for every camera URL: scheme/port checks plus the SSRF guards
+        # (no file://, metadata hosts or ambiguous numeric IPs) live in security.validators.
         try:
-            parts = urlsplit(source)
-            _ = parts.port  # raises ValueError on a bad port
-        except ValueError:
-            return None, "That address is not valid."
-        if parts.scheme.lower() not in ALLOWED_SCHEMES or not parts.hostname:
-            return None, (
-                "Address must start with rtsp://, rtsps://, http:// or https://, "
-                "for example rtsp://192.168.1.20:554/stream1"
-            )
-        return source, None
+            vetted = validate_camera_source(source)
+        except ValidationError as problem:
+            return None, str(problem)
+        if not isinstance(vetted, str):
+            return None, _URL_HELP  # a bare number is a USB index, not a URL
+        return vetted, None
 
     if kind == "file":
         if not allow_file:

@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: sentinel
+Version: 0.1.0
+Summary: Local-first AI camera monitor
+Requires-Python: >=3.11
+Requires-Dist: python-dotenv
+Requires-Dist: opencv-python
+Requires-Dist: numpy
+Requires-Dist: flask
+Requires-Dist: requests
+Requires-Dist: python-telegram-bot
+Requires-Dist: ultralytics
+Requires-Dist: insightface
+Requires-Dist: onnxruntime
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"

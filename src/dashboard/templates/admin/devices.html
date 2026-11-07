@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block title %}Devices{% endblock %}
+{% block content %}
+<div class="card">
+  <h3>Registered Camera Sources</h3>
+  {% if cameras %}
+  <table>
+    <thead><tr><th>Camera</th><th>Type</th><th>Detection FPS</th><th>Status</th><th>Added</th></tr></thead>
+    <tbody>
+      {% for cam in cameras %}
+      <tr>
+        <td>{{ cam[1] }}</td>
+        <td>{{ cam[2] }}</td>
+        <td>{{ cam[4] }}</td>
+        <td>{% if cam[3] %}<span class="status-ok">✓ enabled</span>{% else %}<span class="muted">disabled</span>{% endif %}</td>
+        <td class="mono muted">{{ cam[5][:19] if cam[5] else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No cameras registered yet. Add one on the Cameras page.</p>
+  {% endif %}
+</div>
+{% endblock %}

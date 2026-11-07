@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Admin{% endblock %} · Project Sentinel</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+<nav>
+  <div class="brand">
+    <h2>🛡️ Sentinel</h2>
+    <p>Admin Control Center</p>
+  </div>
+
+  <div class="section-label">Overview</div>
+  <a href="{{ url_for('admin.dashboard') }}" {% if request.endpoint == 'admin.dashboard' %}class="active"{% endif %}>📊 Dashboard</a>
+
+  <div class="section-label">Monitor</div>
+  <a href="{{ url_for('admin.events') }}" {% if request.endpoint == 'admin.events' %}class="active"{% endif %}>📋 Events</a>
+  <a href="{{ url_for('admin.devices') }}" {% if request.endpoint == 'admin.devices' %}class="active"{% endif %}>📷 Devices</a>
+  <a href="{{ url_for('admin.unknown_faces') }}" {% if request.endpoint == 'admin.unknown_faces' %}class="active"{% endif %}>👤 Unknown Faces</a>
+
+  <div class="section-label">Security</div>
+  <a href="{{ url_for('admin.audit_log') }}" {% if request.endpoint == 'admin.audit_log' %}class="active"{% endif %}>🔍 Audit Log</a>
+
+  {% if current_user and current_user.role == 'admin' %}
+  <div class="section-label">Administration</div>
+  <a href="{{ url_for('admin.admin_users') }}" {% if request.endpoint == 'admin.admin_users' %}class="active"{% endif %}>👥 Users</a>
+  <a href="{{ url_for('admin.system_config') }}" {% if request.endpoint == 'admin.system_config' %}class="active"{% endif %}>⚙️ System Config</a>
+  {% endif %}
+
+  <div class="spacer"></div>
+  <div class="user-info">
+    <strong>{{ current_user.username if current_user }}</strong>
+    <span class="role-{{ current_user.role if current_user }}">{{ current_user.role.title() if current_user }}</span>
+  </div>
+  <form method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="nav-logout">↩ Logout</button>
+  </form>
+</nav>
+
+<main>
+  <div class="topbar">
+    <h1>{{ self.title() }}</h1>
+    <a href="{{ url_for('index') }}">← Back to Sentinel</a>
+  </div>
+  <div class="content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="flash flash-{{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+</body>
+</html>

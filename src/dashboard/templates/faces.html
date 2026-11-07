@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Recognition · Sentinel{% endblock %}
+{% block content %}
+<h1>Face recognition</h1>
+<p class="muted">Which model is loaded, how strict matching is, and how much face data is stored.</p>
+
+<section class="card">
+    <h2>Recognition engine</h2>
+    <div class="grid">
+        <div>Model</div><div>{{ model_id }}</div>
+        <div>Strictness</div><div>{{ level }} (threshold {{ "%.3f"|format(threshold) }})</div>
+        <div>Usable embeddings</div><div>{{ embeddings }}</div>
+        <div>Stale embeddings</div><div>{{ stale }}</div>
+        <div>Known people</div><div>{{ people|length }}</div>
+        <div>Unknown faces waiting</div><div>{{ unknown_count }}</div>
+    </div>
+
+    {% if stale %}
+    <div class="flash error" role="alert">
+        {{ stale }} saved face photo(s) were made with a different model and cannot be matched.
+        Add fresh photos on the <a href="{{ url_for('people') }}">People</a> page.
+    </div>
+    {% endif %}
+
+    {% if current_user and current_user.role == 'admin' %}
+    <form method="post" action="{{ url_for('faces_reindex') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <p class="row"><button type="submit" class="secondary">Reload known faces</button></p>
+    </form>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Where to change things</h2>
+    <ul>
+        <li><a href="{{ url_for('people') }}">People</a> — add people and their photos.</li>
+        <li><a href="{{ url_for('unknown_faces') }}">Unknown</a> — review and name faces the cameras saw.</li>
+        <li><a href="{{ url_for('settings_page') }}">Settings</a> — choose how strict matching is.</li>
+    </ul>
+</section>
+{% endblock %}

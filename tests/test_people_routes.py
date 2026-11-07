@@ -1,10 +1,14 @@
-import dataclasses
 import io
-import re
 import sqlite3
 from types import SimpleNamespace
 
 import pytest
+from app_support import (
+    csrf_token,
+    log_in as register_and_login,
+    make_security_config,
+    use_temporary_database,
+)
 from face_fakes import encode, fake_backends, make_photo
 
 from src.dashboard.app import create_app
@@ -16,37 +20,29 @@ from src.faces.service import STRICTNESS, FaceService
 
 @pytest.fixture
 def service(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        manager,
-        "settings",
-        dataclasses.replace(manager.settings, database_path=str(tmp_path / "data" / "t.db")),
-    )
-    monkeypatch.delenv("SECRET_KEY", raising=False)
+    use_temporary_database(tmp_path, monkeypatch)
     return FaceService(
         lambda: DatabaseManager().get_connection(), fake_backends, unknown_dir=tmp_path / "unknown"
     )
 
 
-def build_client(factory):
-    app = create_app(engine=None, config={"FACE_SERVICE_FACTORY": factory})
+def build_client(config, factory):
+    app = create_app(engine=None, config=config, overrides={"FACE_SERVICE_FACTORY": factory})
     app.config["TESTING"] = True
     return app.test_client()
 
 
 @pytest.fixture
-def client(service):
-    return build_client(lambda: service)
+def client(service, tmp_path):
+    return build_client(make_security_config(tmp_path), lambda: service)
 
 
 def token(client, path="/"):
-    html = client.get(path, follow_redirects=True).get_data(as_text=True)
-    return re.search(r'name="csrf-token" content="([^"]+)"', html).group(1)
+    return csrf_token(client, path)
 
 
 def log_in(client):
-    pw = "correct-horse-battery"
-    client.post("/setup", data={"username": "admin", "password": pw, "confirm": pw,
-                                "csrf_token": token(client, "/setup")})
+    register_and_login(client)
 
 
 def photos(*kinds, **kw):
@@ -141,11 +137,11 @@ def test_deleting_a_person_deletes_their_face_data(client, service):
     assert len(service.index) == 0
 
 
-def test_people_page_works_even_when_models_are_missing(service):
+def test_people_page_works_even_when_models_are_missing(service, tmp_path):
     def no_models():
         raise ModelsMissingError("Face recognition models are missing. Run: python scripts/download_models.py")
 
-    client = build_client(no_models)
+    client = build_client(make_security_config(tmp_path), no_models)
     log_in(client)
 
     assert client.get("/people").status_code == 200

@@ -9,8 +9,8 @@ settings = load_settings()
 class DatabaseManager:
     """Opens a SQLite connection. Create one per thread / per web request."""
 
-    def __init__(self) -> None:
-        db_path = Path(settings.database_path)
+    def __init__(self, database_path: str | None = None) -> None:
+        db_path = Path(database_path or settings.database_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.connection = sqlite3.connect(db_path, check_same_thread=False, timeout=10)

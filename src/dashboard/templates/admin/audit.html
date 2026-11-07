@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block content %}
+<div class="card">
+  <h3>Admin Audit Log (last 1000)</h3>
+  <p class="hint">Every sensitive admin action is recorded here. This log is append-only and cannot be edited through the UI.</p>
+  {% if records %}
+  <table>
+    <thead><tr><th>Admin</th><th>Action</th><th>Detail</th><th>IP</th><th>Timestamp</th></tr></thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td>{{ r[0] or '—' }}</td>
+        <td><span class="badge badge-yellow">{{ r[1] }}</span></td>
+        <td class="ellipsis-sm">{{ r[2] or '—' }}</td>
+        <td class="mono muted-sm">{{ r[3] or '—' }}</td>
+        <td class="mono muted">{{ r[4][:19] if r[4] else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No audit records yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

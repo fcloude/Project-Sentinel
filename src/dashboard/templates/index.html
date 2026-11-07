@@ -4,53 +4,72 @@
 <h1>Dashboard</h1>
 
 <section class="card">
-    <h2>Detection engine</h2>
-    <p><strong id="engine-status">{{ "🟢 Running" if status.running else "🔴 Stopped" }}</strong></p>
-    <div class="row">
-        {% for action, label in [("start", "▶ Start"), ("stop", "■ Stop"), ("restart", "↻ Restart")] %}
-        <form method="post" action="{{ url_for('engine_control', action=action) }}">
+    <h2>System status</h2>
+
+    {% if current_user and current_user.role == 'admin' %}
+    <div class="controls">
+        <form action="{{ url_for('start_sentinel') }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="{{ 'secondary' if action != 'start' else '' }}">{{ label }}</button>
+            <button type="submit">▶ Start Sentinel</button>
         </form>
-        {% endfor %}
+        <form action="{{ url_for('stop_sentinel') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">■ Stop Sentinel</button>
+        </form>
+        <form action="{{ url_for('restart_sentinel') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">↻ Restart</button>
+        </form>
     </div>
-    <p class="hint">Starting loads the AI models and can take up to a minute the first time.</p>
+    {% endif %}
+
+    <p id="engine-status">Loading...</p>
+    {% if status.error %}<div class="flash error" role="alert">{{ status.error }}</div>{% endif %}
+
+    <div class="grid">
+        <div>Running</div><div>{{ state.sentinel_running }}</div>
+        <div>Cameras</div><div>{{ state.camera_count }}</div>
+        <div>Events stored</div><div>{{ event_count }}</div>
+        <div>Faces loaded</div><div>{{ state.known_faces }}</div>
+        <div>Unknown waiting</div><div>{{ state.unknown_faces }}</div>
+        <div>Last event</div><div id="last-event">{{ state.last_event }}</div>
+    </div>
 </section>
 
 <section class="card">
-    <h2>Live view</h2>
+    <h2>Cameras</h2>
     {% if cameras %}
     <div class="tiles">
         {% for c in cameras %}
-        <figure class="tile" data-camera-id="{{ c.id }}">
-            <img class="live" data-stream="{{ url_for('camera_stream', camera_id=c.id) }}" alt="Live view of {{ c.name }}">
-            <figcaption><strong>{{ c.name }}</strong> <span class="badge">engine stopped</span></figcaption>
-        </figure>
+        <article class="tile" data-camera-id="{{ c.id }}">
+            <h3>{{ c.name }}</h3>
+            {% if c.id in online_ids %}
+            <img class="preview" src="{{ url_for('camera_stream', camera_id=c.id) }}" alt="Live view of {{ c.name }}">
+            {% else %}
+            <p class="hint">No live picture: this camera is not running. Press Restart.</p>
+            {% endif %}
+            <p class="hint">{{ c.display_source }}</p>
+        </article>
         {% endfor %}
     </div>
     {% else %}
-    <p class="empty"><a href="{{ url_for('cameras') }}">Add a camera</a> to get started.</p>
+    <p class="empty">No cameras yet. <a href="{{ url_for('cameras') }}">Add your first camera</a>.</p>
     {% endif %}
 </section>
 
-<section class="stats">
-    <div class="stat"><div class="n">{{ camera_count }}</div><div class="muted">Cameras</div></div>
-    <div class="stat"><div class="n">{{ event_count }}</div><div class="muted">Events recorded</div></div>
-</section>
-
 <section class="card">
-    <h2>Latest events</h2>
+    <h2>Recent events</h2>
     {% if events %}
     <table>
-        <thead><tr><th>Time</th><th>Camera</th><th>Type</th><th>Message</th></tr></thead>
+        <thead><tr><th>Time</th><th>Type</th><th>Source</th><th>Message</th></tr></thead>
         <tbody>
         {% for e in events %}
-            <tr><td>{{ e.timestamp }}</td><td>{{ e.source }}</td><td>{{ e.event_type }}</td><td>{{ e.message }}</td></tr>
+            <tr><td>{{ e.timestamp }}</td><td>{{ e.event_type }}</td><td>{{ e.source }}</td><td>{{ e.message }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p class="empty">No events yet. Press Start and walk in front of a camera.</p>
+    <p class="empty">Nothing has happened yet.</p>
     {% endif %}
 </section>
 {% endblock %}

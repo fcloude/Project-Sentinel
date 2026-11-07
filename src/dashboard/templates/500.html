@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}500 · System Error · Sentinel{% endblock %}
+{% block content %}
+<section class="card error-page">
+    <div class="error-badge warn">
+        <span class="error-dot warn"></span>
+        <span>ERROR 500</span>
+    </div>
+    <div class="error-visual">
+        <div class="radar-scope warn">
+            <span class="radar-icon">⚠️</span>
+        </div>
+    </div>
+    <h1>System Alert: Internal Error</h1>
+    <p class="muted error-desc">
+        Sentinel encountered an internal issue processing this request. The system state has been preserved and audit telemetry logged.
+    </p>
+    <div class="error-actions">
+        <a href="{{ url_for('index') }}" class="button primary">Return to Dashboard</a>
+        <button type="button" onclick="window.location.reload()" class="button secondary">Retry Request</button>
+    </div>
+</section>
+{% endblock %}

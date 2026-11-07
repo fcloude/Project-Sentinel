@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Alerts · Sentinel{% endblock %}
+{% block content %}
+<h1>Alerts</h1>
+<p class="muted">Choose <strong>where</strong> alerts go (channels) and <strong>when</strong> they are sent (rules). Alerts are queued and retried, so a bad connection never stops detection.</p>
+
+<section class="card">
+    <h2>Where alerts go</h2>
+    <table>
+        <thead><tr><th>Name</th><th>Details</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for c in channels %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.summary }}</td>
+                <td>{{ "On" if c.enabled else "Off" }}</td>
+                <td class="actions">
+                    <form method="post" action="{{ url_for('test_alert_channel', channel_id=c.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="secondary">Test</button>
+                    </form>
+                    <form method="post" action="{{ url_for('toggle_alert_channel', channel_id=c.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="secondary">{{ "Switch off" if c.enabled else "Switch on" }}</button>
+                    </form>
+                    {% if c.type != "inapp" %}
+                    <form method="post" action="{{ url_for('delete_alert_channel', channel_id=c.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% for type_key, spec in channel_types.items() %}
+    <details class="add-channel">
+        <summary>Add {{ spec.label }}</summary>
+        <p class="hint">{{ spec.help }}</p>
+        <form method="post" action="{{ url_for('add_alert_channel') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="type" value="{{ type_key }}">
+
+            <label for="name-{{ type_key }}">Name (optional)</label>
+            <input id="name-{{ type_key }}" name="name" maxlength="50" placeholder="{{ spec.label }}">
+
+            {% for f in spec.fields %}
+            <label for="{{ type_key }}-{{ f.name }}">{{ f.label }}</label>
+            {% if f.kind == "select" %}
+            <select id="{{ type_key }}-{{ f.name }}" name="{{ f.name }}">
+                {% for value, text in f.choices %}<option value="{{ value }}">{{ text }}</option>{% endfor %}
+            </select>
+            {% else %}
+            <input id="{{ type_key }}-{{ f.name }}" name="{{ f.name }}"
+                   type="{{ 'password' if f.kind == 'password' else ('number' if f.kind == 'number' else 'text') }}"
+                   {% if f.default %}value="{{ f.default }}"{% endif %}
+                   {% if f.required %}required{% endif %}
+                   placeholder="{{ f.placeholder or '' }}"
+                   autocomplete="{{ 'new-password' if f.kind == 'password' else 'off' }}">
+            {% endif %}
+            {% endfor %}
+
+            <label class="check"><input type="checkbox" name="use_defaults" checked> Also send the default alerts here (unknown person, known person arrives)</label>
+            <p class="row"><button type="submit">Add</button></p>
+        </form>
+    </details>
+    {% endfor %}
+</section>
+
+<section class="card">
+    <h2>Phone and browser push</h2>
+    <p>{{ push_count }} device(s) subscribed.</p>
+    {% if not push_installed %}
+    <div class="flash error">Push needs an extra package on this computer. Run: <code>python -m pip install pywebpush</code></div>
+    {% endif %}
+    <p class="row"><button type="button" id="enable-push">Enable push on this device</button></p>
+    <p id="push-status" class="hint" aria-live="polite"></p>
+
+    <form method="post" action="{{ url_for('save_push_contact') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="contact">Your email (push services require a contact address)</label>
+        <input id="contact" name="contact" type="email" value="{{ push_contact }}" required>
+        <p class="row"><button type="submit" class="secondary">Save</button></p>
+    </form>
+    <p class="hint">Push works only over HTTPS (or http://localhost). On an iPhone, add Sentinel to the Home Screen first. See docs/PHONE_ALERTS.md.</p>
+</section>
+
+<section class="card">
+    <h2>When alerts are sent (rules)</h2>
+    {% if rules %}
+    <table>
+        <thead><tr><th>Rule</th><th>When</th><th>Where</th><th>Limits</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rules %}
+            <tr>
+                <td>{{ r.name }}{% if not r.enabled %} <span class="badge">off</span>{% endif %}</td>
+                <td>{{ r.trigger_label }}<br><span class="hint">{{ r.camera_label }}{% if r.start_time %} · {{ r.start_time }}-{{ r.end_time }}{% endif %}</span></td>
+                <td>{{ r.channel_labels | join(", ") }}</td>
+                <td>every {{ r.cooldown_s }}s at most{% if r.attach_snapshot %} · with photo{% endif %}</td>
+                <td class="actions">
+                    <form method="post" action="{{ url_for('toggle_alert_rule', rule_id=r.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="secondary">{{ "Switch off" if r.enabled else "Switch on" }}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('delete_alert_rule', rule_id=r.id) }}" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No rules, so no alerts will be sent. Add one below.</p>
+    {% endif %}
+
+    <details class="add-channel">
+        <summary>Add a rule</summary>
+        <form method="post" action="{{ url_for('add_alert_rule') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label for="rule-name">Name</label>
+            <input id="rule-name" name="name" maxlength="60" placeholder="Night-time visitors" required>
+
+            <label for="rule-trigger">Alert me when</label>
+            <select id="rule-trigger" name="trigger">
+                {% for key, label in trigger_labels.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+            </select>
+
+            <label for="rule-camera">On</label>
+            <select id="rule-camera" name="camera_id">
+                <option value="">All cameras</option>
+                {% for c in cameras %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+            </select>
+
+            <p class="label-like">Send to</p>
+            {% for c in channels %}
+            <label class="check"><input type="checkbox" name="channel_ids" value="{{ c.id }}"> {{ c.name }}</label>
+            {% endfor %}
+
+            <label for="rule-start">Only between (optional, 24-hour clock; can pass midnight)</label>
+            <div class="row">
+                <input id="rule-start" name="start_time" type="time" aria-label="Start time">
+                <span class="muted">and</span>
+                <input id="rule-end" name="end_time" type="time" aria-label="End time">
+            </div>
+
+            <label for="rule-cooldown">At most one alert every (seconds)</label>
+            <input id="rule-cooldown" name="cooldown_s" type="number" min="10" max="86400" value="60">
+
+            <label class="check"><input type="checkbox" name="attach_snapshot" checked> Include a photo</label>
+            <p class="row"><button type="submit">Add rule</button></p>
+        </form>
+    </details>
+</section>
+
+<section class="card">
+    <h2>Recent deliveries</h2>
+    {% if outbox %}
+    <table>
+        <thead><tr><th>Time</th><th>Channel</th><th>Alert</th><th>Result</th></tr></thead>
+        <tbody>
+        {% for o in outbox %}
+            <tr>
+                <td>{{ o.created_at[:19] }}</td>
+                <td>{{ o.channel }}</td>
+                <td>{{ o.title }}</td>
+                <td>
+                    {% if o.status == "sent" %}<span class="ok">Sent</span>
+                    {% elif o.status == "failed" %}<span class="bad">Failed</span>
+                    {% else %}<span class="muted">Waiting{% if o.attempts %} (retry {{ o.attempts }}){% endif %}</span>{% endif %}
+                    {% if o.error %}<br><span class="hint">{{ o.error }}</span>{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Nothing sent yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/push.js') }}"></script>{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Unknown Faces{% endblock %}
+{% block content %}
+<div class="card">
+  <h3>Unknown Faces (last 200)</h3>
+  <p class="hint">Faces saved for review. Naming or dismissing them happens on the
+    <a href="{{ url_for('unknown_faces') }}">Unknown page</a>, so biometric data is handled in one place.</p>
+  {% if faces %}
+  <table>
+    <thead><tr><th>Face</th><th>Camera</th><th>Last Seen</th><th>Times Seen</th><th>Crop</th></tr></thead>
+    <tbody>
+      {% for f in faces %}
+      <tr>
+        <td class="mono muted-sm">#{{ f[0] }}</td>
+        <td>{{ f[1] if f[1] is not none else '—' }}</td>
+        <td class="mono muted">{{ f[2][:19] if f[2] else '—' }}</td>
+        <td>{{ f[3] }}</td>
+        <td>
+          <a href="{{ url_for('unknown_crop', unknown_id=f[0]) }}">view</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No unknown faces waiting for review.</p>
+  {% endif %}
+</div>
+{% endblock %}

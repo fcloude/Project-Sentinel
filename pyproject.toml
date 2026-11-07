@@ -12,6 +12,10 @@ dependencies = [
     "opencv-python",
     "numpy",
     "flask",
+    # Production WSGI server used by run.py (it falls back to Flask's dev server without it).
+    "waitress",
+    # Preferred password hasher in src/security/passwords.py (scrypt is the fallback).
+    "argon2-cffi",
     "requests",
     "python-telegram-bot",
     "cryptography",

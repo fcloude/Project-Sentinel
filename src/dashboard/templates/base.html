@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#0f141b">
     <title>{% block title %}Project Sentinel{% endblock %}</title>
+    <link rel="manifest" href="{{ url_for('manifest') }}">
+    <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body{% if g.user %} data-auth="1"{% endif %}>
 {% if g.user %}
 <header class="topbar">
     <a class="brand" href="{{ url_for('index') }}">🛡️ Sentinel</a>
@@ -17,9 +20,15 @@
         <a href="{{ url_for('people') }}">People</a>
         <a href="{{ url_for('unknown_faces') }}">Unknown{% if unknown_count %} <span class="badge warn">{{ unknown_count }}</span>{% endif %}</a>
         <a href="{{ url_for('events_page') }}">Events</a>
+        <a href="{{ url_for('alerts_page') }}">Alerts</a>
+        <a href="{{ url_for('faces_page') }}">Faces</a>
         <a href="{{ url_for('settings_page') }}">Settings</a>
+        {% if g.user.role == 'admin' %}
+        <a href="{{ url_for('admin.dashboard') }}">Admin</a>
+        {% endif %}
     </nav>
-    <form method="post" action="{{ url_for('logout') }}">
+    <a class="bell" href="{{ url_for('notifications_page') }}" aria-label="Notifications">🔔 <span id="unread-badge" class="badge warn"{% if not unread_count %} hidden{% endif %}>{{ unread_count or 0 }}</span></a>
+    <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="link" type="submit">Log out ({{ g.user.username }})</button>
     </form>
@@ -33,6 +42,8 @@
     {% endwith %}
     {% block content %}{% endblock %}
 </main>
+<div id="toasts" aria-live="polite"></div>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

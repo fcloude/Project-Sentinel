@@ -1,0 +1,29 @@
+name: security
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # gitleaks scans history
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project + scanners
+        run: pip install -e . bandit pip-audit
+      - name: Sentinel static scan
+        run: python tools/security_scan.py
+      - name: Bandit (medium+)
+        run: bandit -r src -ll
+      - name: Dependency CVEs
+        run: pip-audit
+      - name: Secret scan (full git history)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

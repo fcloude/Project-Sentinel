@@ -1,10 +1,7 @@
-import dataclasses
-import re
-
 import pytest
+from app_support import PASSWORD, csrf_token, log_in, make_security_config, register, sign_in
 
 from src.dashboard.app import create_app
-from src.database import manager
 
 
 class FakeEngine:
@@ -35,38 +32,19 @@ def engine():
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch, engine):
-    test_settings = dataclasses.replace(
-        manager.settings,
-        database_path=str(tmp_path / "data" / "test.db"),
-        allow_file_sources=True,
-    )
-    monkeypatch.setattr(manager, "settings", test_settings)
-    monkeypatch.delenv("SECRET_KEY", raising=False)
-
-    app = create_app(engine=engine)
+def client(tmp_path, engine):
+    # An explicit config keeps the test hermetic: no .env, no developer database.
+    app = create_app(engine=engine, config=make_security_config(tmp_path))
     app.config["TESTING"] = True
     return app.test_client()
 
 
-PASSWORD = "correct-horse-battery"
-
-
 def token(client, path="/login"):
-    html = client.get(path, follow_redirects=True).get_data(as_text=True)
-    return re.search(r'name="csrf-token" content="([^"]+)"', html).group(1)
+    return csrf_token(client, path)
 
 
 def setup_admin(client, username="admin", password=PASSWORD):
-    return client.post(
-        "/setup",
-        data={
-            "username": username,
-            "password": password,
-            "confirm": password,
-            "csrf_token": token(client, "/setup"),
-        },
-    )
+    return register(client, username, password)
 
 
 def logout(client):
@@ -74,10 +52,7 @@ def logout(client):
 
 
 def login(client, password=PASSWORD):
-    return client.post(
-        "/login",
-        data={"username": "admin", "password": password, "csrf_token": token(client, "/login")},
-    )
+    return sign_in(client, "admin", password)
 
 
 def test_first_visit_redirects_to_setup(client):
@@ -92,15 +67,16 @@ def test_health_is_public_even_before_setup(client):
     assert response.get_json() == {"status": "ok"}
 
 
-def test_setup_creates_admin_and_logs_in(client):
-    response = setup_admin(client)
-    assert response.status_code == 302
+def test_setup_creates_admin_then_login_gives_access(client):
+    assert setup_admin(client).status_code == 302
+    # The wizard does not auto-sign-in: the new admin must authenticate.
+    assert login(client).status_code == 302
     assert client.get("/").status_code == 200
 
 
 def test_setup_rejects_short_password(client):
     response = setup_admin(client, password="short")
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert b"at least 10" in response.data
     assert client.get("/").status_code == 302  # still no admin: back to setup
 
@@ -109,8 +85,7 @@ def test_setup_is_closed_after_first_admin(client):
     setup_admin(client)
     logout(client)
     response = client.get("/setup")
-    assert response.status_code == 302
-    assert "/login" in response.headers["Location"]
+    assert response.status_code == 404
 
 
 def test_dashboard_requires_login(client):
@@ -131,7 +106,7 @@ def test_wrong_password_is_rejected_and_right_one_works(client):
 
 def test_post_without_csrf_token_is_rejected(client):
     response = client.post("/login", data={"username": "admin", "password": "x"})
-    assert response.status_code == 400
+    assert response.status_code == 403
 
 
 def test_login_is_rate_limited(client):
@@ -150,6 +125,7 @@ def test_login_is_rate_limited(client):
 
 def test_engine_controls_call_the_engine(client, engine):
     setup_admin(client)
+    login(client)
     t = token(client, "/")
 
     client.post("/engine/start", data={"csrf_token": t})
@@ -184,7 +160,7 @@ def test_html_in_event_messages_is_escaped(client):
     from src.database.repository import EventRepository
     from src.events.event import Event
 
-    setup_admin(client)
+    log_in(client)
     EventRepository().save(
         Event(event_type="X", source="t", message="<script>alert(1)</script>")
     )

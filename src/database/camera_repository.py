@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 
-from cryptography.fernet import InvalidToken
-
 from src.camera.url_utils import mask_url
+from src.security.crypto import SecretDecryptionError
 
 
 class CameraRepository:
@@ -27,7 +26,7 @@ class CameraRepository:
         camera_id, name, kind, source_enc, enabled = row
         try:
             source = self.box.decrypt(source_enc)
-        except InvalidToken:
+        except SecretDecryptionError:
             source = None
 
         if source is None:
@@ -81,7 +80,7 @@ class CameraRepository:
         for camera_id, name, kind, source_enc, fps in rows:
             try:
                 source = self.box.decrypt(source_enc)
-            except InvalidToken:
+            except SecretDecryptionError:
                 continue  # saved under a different secret key; cannot be used
             cameras.append(
                 {

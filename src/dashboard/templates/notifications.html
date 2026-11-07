@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Notifications · Sentinel{% endblock %}
+{% block content %}
+<h1>Notifications</h1>
+
+<div class="row">
+    <form method="post" action="{{ url_for('mark_notifications_read') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="secondary">Mark all as read</button>
+    </form>
+    <label class="check"><input type="checkbox" id="sound-toggle"> Play a sound for new alerts</label>
+</div>
+
+{% if items %}
+    {% for i in items %}
+    <article class="card notice{% if not i.is_read %} unread{% endif %}">
+        {% if i.snapshot_path %}
+        <img class="crop" src="{{ url_for('notification_snapshot', inbox_id=i.id) }}" alt="Snapshot for {{ i.title }}">
+        {% endif %}
+        <div class="grow">
+            <strong>{{ i.title }}</strong>
+            <p>{{ i.body }}</p>
+            <p class="hint">{{ i.camera_name }}{% if i.camera_name %} · {% endif %}{{ i.created_at }}</p>
+        </div>
+    </article>
+    {% endfor %}
+{% else %}
+    <section class="card"><p class="empty">No alerts yet. When a rule fires, it appears here.</p></section>
+{% endif %}
+{% endblock %}

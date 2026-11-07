@@ -1,0 +1,10 @@
+.auth-card{max-width:380px;margin:80px auto;background:#1b2330;padding:30px;border-radius:12px}
+.auth-card h1{font-size:22px;margin-bottom:20px;text-align:center}
+.auth-card label{display:block;margin:14px 0 6px;font-size:14px}
+.auth-card input[type=text],.auth-card input[type=password]{width:100%;padding:10px;border-radius:8px;border:1px solid #324158;background:#10151d;color:#fff}
+.auth-card button{margin-top:20px;width:100%;padding:11px;border:0;border-radius:8px;background:#44d17c;color:#10151d;font-weight:bold;cursor:pointer}
+.auth-error{background:#4a1f26;color:#ffb3bd;padding:10px;border-radius:8px;margin-bottom:10px}
+.auth-ok{background:#1f4a32;color:#b3ffd0;padding:10px;border-radius:8px;margin-bottom:10px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.controls form{display:inline}
+.logout-form{position:absolute;top:15px;right:20px}

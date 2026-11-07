@@ -12,8 +12,10 @@ Deciders: you (product owner + only developer).
 | 004 | YuNet + SFace via OpenCV; YOLOv8 and `buffalo_l` removed; body/object detection deferred | **Accepted, pending benchmark** |
 | 005 | Notification channels + rules + outbox; Telegram becomes bring-your-own | Proposed |
 | 006 | Camera ingestion via OpenCV/FFmpeg with reader threads (revisit later) | Proposed |
-| 007 | Server-rendered UI (Jinja2 + HTMX + Alpine + Tailwind) | Proposed |
+| 007 | Server-rendered UI (Jinja2 + plain CSS/JS; no HTMX/Alpine/Tailwind) | **Accepted** (changed) |
 | 008 | Docker first, Windows installer second; offline-verifiable signed licence keys | Proposed |
+| 009 | Upgrade legacy `users` tables in place instead of requiring a reinstall | **Accepted** |
+| 010 | Compare CSRF origins as normalized authorities, with loopback aliases | **Accepted** |
 
 ---
 
@@ -278,3 +280,66 @@ Customers are not developers. They need "download, run, done."
 1. [ ] Dockerfile + compose file + healthcheck (Phase 5).
 2. [ ] Spike Windows packaging early (Phase 3) because it's the riskiest unknown.
 3. [ ] Implement `licensing/` verify function + admin script to issue keys.
+
+---
+
+## ADR-009: Upgrade legacy `users` tables in place
+
+**Status:** Accepted (2026-11-06)
+
+### Context
+Databases created by earlier builds have a `users` table without `active`,
+`session_epoch` or `last_login_at`. The current auth store reads those columns, so every
+login raised `IndexError` and the owner could not sign in.
+
+### Decision
+Add a small, idempotent `ensure_user_columns()` used by both `SecurityStore` and the
+migration runner (`PRAGMA user_version` 5). It only adds missing columns with safe
+defaults. No existing row, username or password hash is rewritten.
+
+### Options Considered
+- **Reinstall / new database:** destroys history and the only admin account — rejected.
+- **Full migration framework (Alembic):** unnecessary for additive changes and adds a
+  dependency to a single-file SQLite install — rejected.
+- **Tolerate missing columns in code:** would mask the problem and still break
+  `record_login` — rejected.
+
+### Consequences
+Existing installs keep working after `python run.py`; fresh installs converge on the same
+schema regardless of whether the store or the migration runner runs first. Removing a
+column, tightening a constraint or renaming a table would still need a real migration.
+
+### Action items
+1. [x] Regression test with a legacy database and a full login on the upgraded copy.
+2. [x] Document that migrations do not create an automatic backup.
+
+---
+
+## ADR-010: Normalize CSRF Origin comparison, accept loopback aliases
+
+**Status:** Accepted (2026-11-06)
+
+### Context
+`bad_origin` was raised whenever the raw `Origin` string's `netloc` differed from the
+`Host` header. On local-first installs the same server is commonly reached as both
+`localhost` and `127.0.0.1`, and host-rewriting proxies make the browser's origin differ
+from the proxy's `Host`. The audit log recorded 12 such rejections from `127.0.0.1` on
+`POST /login`, blocking the owner before authentication was even attempted.
+
+### Decision
+Compare `(scheme, host, port)` after normalization (case, trailing dot, default ports)
+and accept `localhost` / `127.0.0.1` / `::1` as one authority **only** when scheme and
+port match and both sides are loopback. Keep the per-session token requirement, reject
+`null` and unparseable origins, and record `origin=`/`host=` in the log and audit row.
+
+### Options Considered
+- **Add every hostname to `SENTINEL_TRUSTED_ORIGINS`:** hides the cause and surprises the
+  next operator; still broken for a fresh local install — rejected as the default.
+- **Disable the Origin check:** weakens CSRF protection — rejected.
+- **Trust `Referer` instead:** less reliable and equally string-fragile — rejected.
+
+### Consequences
+Legitimate loopback forms work; a remote site still cannot produce a matching origin,
+and a different port on loopback is still rejected. Proxies that rewrite `Host` must
+forward the original host or be listed in `SENTINEL_TRUSTED_ORIGINS`; the 403 page now
+names both addresses, so this is actionable instead of opaque.

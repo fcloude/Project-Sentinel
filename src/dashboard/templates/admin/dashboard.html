@@ -1,0 +1,74 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats">
+  <div class="stat"><div class="num">{{ stats.total_events }}</div><div class="label">Total Events</div></div>
+  <div class="stat"><div class="num">{{ stats.total_cameras }}</div><div class="label">Cameras</div></div>
+  <div class="stat"><div class="num">{{ stats.total_people }}</div><div class="label">Enrolled People</div></div>
+  <div class="stat"><div class="num">{{ stats.unknown_faces }}</div><div class="label">Unknown Faces</div></div>
+  <div class="stat"><div class="num">{{ stats.embeddings }}</div><div class="label">Face Embeddings</div></div>
+  <div class="stat"><div class="num">{{ stats.users }}</div><div class="label">User Accounts</div></div>
+  <div class="stat"><div class="num">{{ stats.audit_entries }}</div><div class="label">Audit Entries</div></div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h3>Recent Events</h3>
+    {% if recent_events %}
+    <table>
+      <thead><tr><th>Type</th><th>Source</th><th>Time</th></tr></thead>
+      <tbody>
+        {% for e in recent_events %}
+        <tr>
+          <td><span class="badge badge-blue">{{ e[0] }}</span></td>
+          <td>{{ e[1] }}</td>
+          <td class="mono muted">{{ e[3][:19] if e[3] else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No events yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Recent Admin Activity</h3>
+    {% if recent_audit %}
+    <table>
+      <thead><tr><th>User</th><th>Action</th><th>Time</th></tr></thead>
+      <tbody>
+        {% for r in recent_audit %}
+        <tr>
+          <td>{{ r[0] or '—' }}</td>
+          <td><span class="badge badge-yellow">{{ r[1] }}</span></td>
+          <td class="mono muted">{{ r[3][:19] if r[3] else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No audit records yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if cameras %}
+<div class="card">
+  <h3>Camera Registry</h3>
+  <table>
+    <thead><tr><th>Camera</th><th>Type</th><th>Enabled</th></tr></thead>
+    <tbody>
+      {% for cam in cameras %}
+      <tr>
+        <td>{{ cam[0] }}</td>
+        <td>{{ cam[1] }}</td>
+        <td>{% if cam[2] %}<span class="status-ok">✓ on</span>{% else %}<span class="muted">off</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

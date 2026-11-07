@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}404 · Page Not Found · Sentinel{% endblock %}
+{% block content %}
+<section class="card error-page">
+    <div class="error-badge">
+        <span class="error-dot"></span>
+        <span>ERROR 404</span>
+    </div>
+    <div class="error-visual">
+        <div class="radar-scope">
+            <div class="radar-sweep"></div>
+            <span class="radar-icon">📡</span>
+        </div>
+    </div>
+    <h1>Feed or Page Not Found</h1>
+    <p class="muted error-desc">
+        The requested address, camera feed, or resource does not exist on this Sentinel node or has been relocated.
+    </p>
+    <div class="error-actions">
+        <a href="{{ url_for('index') }}" class="button primary">Go to Dashboard</a>
+        <a href="{{ url_for('cameras') }}" class="button secondary">View Cameras</a>
+        <button type="button" onclick="history.back()" class="button secondary">Go Back</button>
+    </div>
+</section>
+{% endblock %}

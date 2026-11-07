@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Admin Users{% endblock %}
+{% block content %}
+<div class="mb-16">
+  <a href="{{ url_for('admin.create_admin_user') }}" class="btn btn-primary">+ New Admin User</a>
+</div>
+<div class="card">
+  <h3>User Accounts</h3>
+  {% if admins %}
+  <table>
+    <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th>Last Login</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for a in admins %}
+      <tr>
+        <td>{{ a[1] }}</td>
+        <td><span class="role-{{ a[2] }}">{{ a[2].replace('_',' ').title() }}</span></td>
+        <td>
+          {% if a[3] %}
+            <span class="badge badge-green">Active</span>
+          {% else %}
+            <span class="badge badge-red">Suspended</span>
+          {% endif %}
+        </td>
+        <td class="mono muted-sm">{{ a[4][:10] if a[4] else '—' }}</td>
+        <td class="mono muted-sm">{{ a[5][:16] if a[5] else 'Never' }}</td>
+        <td>
+          {% if a[0] != current_user.id %}
+          <form method="post" class="inline-form" action="{{ url_for('admin.toggle_admin', admin_id=a[0]) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary btn-sm">
+              {% if a[3] %}Suspend{% else %}Activate{% endif %}
+            </button>
+          </form>
+          <form method="post" class="inline-form" action="{{ url_for('admin.delete_admin_user', admin_id=a[0]) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-danger btn-sm">Delete</button>
+          </form>
+          {% else %}
+          <span class="muted-12">(you)</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No admin users found.</p>
+  {% endif %}
+</div>
+{% endblock %}

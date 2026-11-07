@@ -1,8 +1,7 @@
-import dataclasses
-import re
 import sqlite3
 
 import pytest
+from app_support import csrf_token, log_in, make_security_config, use_temporary_database
 
 from src.dashboard.app import create_app
 from src.database import manager
@@ -10,31 +9,18 @@ from src.database import manager
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    test_settings = dataclasses.replace(
-        manager.settings,
-        database_path=str(tmp_path / "data" / "test.db"),
-        allow_file_sources=True,
-    )
-    monkeypatch.setattr(manager, "settings", test_settings)
-    monkeypatch.delenv("SECRET_KEY", raising=False)
-
-    app = create_app(engine=None)
+    use_temporary_database(tmp_path, monkeypatch)
+    app = create_app(engine=None, config=make_security_config(tmp_path))
     app.config["TESTING"] = True
     return app.test_client()
 
 
 def token(client, path="/"):
-    html = client.get(path, follow_redirects=True).get_data(as_text=True)
-    return re.search(r'name="csrf-token" content="([^"]+)"', html).group(1)
+    return csrf_token(client, path)
 
 
 def login_as_admin(client):
-    pw = "correct-horse-battery"
-    client.post(
-        "/setup",
-        data={"username": "admin", "password": pw, "confirm": pw,
-              "csrf_token": token(client, "/setup")},
-    )
+    log_in(client)
 
 
 def camera_rows():
